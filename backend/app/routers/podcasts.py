@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
-from app import database, crud, schemas
+from app import database, crud, schemas, models
 from app.services.rss_parser import parse_feed
 
 router = APIRouter()
@@ -29,7 +29,7 @@ def add_podcast(podcast_data: schemas.PodcastCreate, db: Session = Depends(datab
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to parse RSS feed: {str(e)}")
     
-    existing = db.query(database.Base.classes.podcasts).filter_by(feed_url=podcast_data.feed_url).first()
+    existing = db.query(models.Podcast).filter_by(feed_url=podcast_data.feed_url).first()
     if existing:
         raise HTTPException(status_code=400, detail="Podcast already exists")
     
