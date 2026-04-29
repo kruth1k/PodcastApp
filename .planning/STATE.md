@@ -7,16 +7,16 @@
 - **Name:** PodcastStats
 - **Type:** Greenfield project
 - **Core Value:** Users can view detailed listening statistics across all podcasts and episodes, with powerful filtering and grouping by time periods (daily, weekly, monthly, yearly).
-- **Current Focus:** Roadmap creation
+- **Current Focus:** Phase 1 - Podcast Subscription & Library
 
 ## Current Position
 
 | Field | Value |
 |-------|-------|
-| **Phase** | 0 - Roadmap |
+| **Phase** | 1 - Podcast Subscription & Library |
 | **Plan** | Not started |
-| **Status** | Planning |
-| **Progress** | █░░░░░░░░░░░░░░░░░░░ 0% |
+| **Status** | Context gathered |
+| **Progress** | █░░░░░░░░░░░░░░░░░░░ 14% (1/7 phases) |
 
 ## Performance Metrics
 
@@ -32,31 +32,43 @@
 | Decision | Rationale | Phase |
 |----------|-----------|-------|
 | Statistics as core value | User explicitly wants stats-focused app | All |
-| Fine granularity | 7 phases for clear delivery boundaries | Roadmap |
-| Phase ordering: Playback → Subscription → Feed → Events → Stats | Dependencies: can't have stats without events, can't have events without playback | Roadmap |
+| Python FastAPI backend | Self-hosted backend | All |
+| PostgreSQL database | Robust, multi-user | All |
+| React Native (Expo) | Cross-platform mobile | All |
+| Subscription first | Phase 1: subscription, Phase 2: playback | Roadmap |
+| Bottom bar player | Spotify-style persistent UI | Phase 2 |
+| Skip configurable | Defaults 15s fwd, 30s back | Phase 2 |
+| Full speed range | 0.5x to 3x | Phase 2 |
+| Offline + downloads | User requested | Future |
+
+### Technical Stack
+
+- **Backend:** Python (FastAPI) + PostgreSQL
+- **Web:** Next.js 15 + howler.js + Zustand + Recharts
+- **Mobile:** React Native (Expo) + expo-av
+- **ORM:** SQLAlchemy + Alembic
 
 ### Research Insights
 
-- Stack: Next.js 15 + howler.js + Prisma/SQLite + Zustand
-- Critical: Statistics must be captured at playback layer from day one (prevent retrofit bugs)
-- Pitfalls: Time-period shift (store sessions, not aggregates), background playback, session closure
-
-### Technical Notes
-
-- Database: Store per-session data with timestamps, aggregate at query time
-- Audio: howler.js for cross-browser support, background playback via notification API
-- State: Zustand for lightweight audio player state management
+- Statistics must be captured at playback layer from day one
+- Time-period shift: Store sessions, not aggregates
+- Background playback + session closure are common pitfalls
 
 ## Session Continuity
 
 ### Current Work
 
-Creating roadmap with 7 phases covering all 21 v1 requirements.
+Phase 1 discuss-phase completed. Context gathered:
+- CONTEXT.md created: .planning/phases/01-podcast-subscription/01-CONTEXT.md
+- DISCUSSION-LOG.md created: .planning/phases/01-podcast-subscription/01-DISCUSSION-LOG.md
+- ROADMAP.md updated (phase order swapped)
+- PROJECT.md updated (new stack)
 
 ### Next Steps
 
-1. User approves roadmap
-2. Proceed to `/gsd-plan-phase 1` for Foundation & Playback
+1. Run `/gsd-plan-phase 1` to create implementation plan
+2. Research phase-specific details (Python/FastAPI RSS parsing, Next.js podcast UI)
+3. Execute Phase 1: Podcast Subscription & Library
 
 ### Blockers
 
@@ -64,10 +76,12 @@ Creating roadmap with 7 phases covering all 21 v1 requirements.
 
 ### Completed This Session
 
-- Read PROJECT.md, REQUIREMENTS.md, research/SUMMARY.md, config.json
-- Derived 7 phases from requirements with natural delivery boundaries
-- Validated 100% requirement coverage (21/21 mapped)
-- Created ROADMAP.md and STATE.md
+- Phase 1 discuss-phase with user decisions captured:
+  - Stack: Python + PostgreSQL + React Native
+  - Phase order: Subscription first
+  - UI: Bottom bar player
+  - Player features: configurable skip, full speed range
+  - Offline support noted
 
 ---
 

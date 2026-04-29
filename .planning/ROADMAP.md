@@ -5,8 +5,8 @@
 
 ## Phases
 
-- [ ] **Phase 1: Foundation & Playback** - Core audio playback engine with basic controls
-- [ ] **Phase 2: Podcast Subscription & Library** - Subscribe to podcasts and view episode lists
+- [ ] **Phase 1: Podcast Subscription & Library** - Subscribe to podcasts and view episode lists
+- [ ] **Phase 2: Foundation & Playback** - Core audio playback engine with basic controls
 - [ ] **Phase 3: Feed Management & Progress** - Refresh feeds and persist playback position
 - [ ] **Phase 4: Event Tracking & Background** - Capture listening events and background playback
 - [ ] **Phase 5: Basic Statistics** - Total listening time and top podcasts/episodes
@@ -17,33 +17,11 @@
 
 ## Phase Details
 
-### Phase 1: Foundation & Playback
-
-**Goal:** Users can play podcast episodes with full audio controls
-
-**Depends on:** Nothing (first phase)
-
-**Requirements:** PLAY-01, PLAY-02, PLAY-03, PLAY-04, PLAY-05
-
-**Success Criteria** (what must be TRUE):
-1. User can play any episode and hear audio within 2 seconds of clicking play
-2. User can pause playback and resume without audio gaps
-3. User can seek to any position in the episode using a progress bar
-4. User can skip forward 15 or 30 seconds with a single tap
-5. User can skip backward 15 or 30 seconds with a single tap
-6. User can adjust playback speed from 0.5x to 3x and hear the change immediately
-
-**Plans:** TBD
-
-**UI hint:** yes
-
----
-
-### Phase 2: Podcast Subscription & Library
+### Phase 1: Podcast Subscription & Library
 
 **Goal:** Users can subscribe to podcasts and browse their episode library
 
-**Depends on:** Phase 1
+**Depends on:** Nothing (first phase)
 
 **Requirements:** POD-01, POD-02, POD-03, LIB-01, LIB-03
 
@@ -53,6 +31,29 @@
 3. User can unsubscribe from a podcast and it disappears from their library
 4. User can view all episodes for a specific podcast sorted by date
 5. User can view episode details including title, description, and duration
+
+**Plans:** TBD
+
+**UI hint:** yes
+
+---
+
+### Phase 2: Foundation & Playback
+
+**Goal:** Users can play podcast episodes with full audio controls
+
+**Depends on:** Phase 1
+
+**Requirements:** PLAY-01, PLAY-02, PLAY-03, PLAY-04, PLAY-05
+
+**Success Criteria** (what must be TRUE):
+1. User can play any episode and hear audio within 2 seconds of clicking play
+2. User can pause playback and resume without audio gaps
+3. User can seek to any position in the episode using a progress bar
+4. User can skip forward 15 or 30 seconds with a single tap (configurable)
+5. User can skip backward 15 or 30 seconds with a single tap (configurable)
+6. User can adjust playback speed from 0.5x to 3x and hear the change immediately
+7. Player displays as bottom bar (Spotify-style, persists across navigation)
 
 **Plans:** TBD
 
@@ -141,7 +142,7 @@
 
 **Goal:** Users can search for episodes within their entire library
 
-**Depends on:** Phase 2
+**Depends on:** Phase 1
 
 **Requirements:** LIB-04
 
@@ -160,8 +161,8 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation & Playback | 0/1 | Not started | - |
-| 2. Podcast Subscription & Library | 0/1 | Not started | - |
+| 1. Podcast Subscription & Library | 0/1 | Not started | - |
+| 2. Foundation & Playback | 0/1 | Not started | - |
 | 3. Feed Management & Progress | 0/1 | Not started | - |
 | 4. Event Tracking & Background | 0/1 | Not started | - |
 | 5. Basic Statistics | 0/1 | Not started | - |
@@ -178,16 +179,16 @@
 
 | Requirement | Phase |
 |-------------|-------|
-| PLAY-01 | Phase 1 |
-| PLAY-02 | Phase 1 |
-| PLAY-03 | Phase 1 |
-| PLAY-04 | Phase 1 |
-| PLAY-05 | Phase 1 |
-| POD-01 | Phase 2 |
-| POD-02 | Phase 2 |
-| POD-03 | Phase 2 |
-| LIB-01 | Phase 2 |
-| LIB-03 | Phase 2 |
+| POD-01 | Phase 1 |
+| POD-02 | Phase 1 |
+| POD-03 | Phase 1 |
+| LIB-01 | Phase 1 |
+| LIB-03 | Phase 1 |
+| PLAY-01 | Phase 2 |
+| PLAY-02 | Phase 2 |
+| PLAY-03 | Phase 2 |
+| PLAY-04 | Phase 2 |
+| PLAY-05 | Phase 2 |
 | POD-04 | Phase 3 |
 | PLAY-06 | Phase 3 |
 | LIB-02 | Phase 3 |
@@ -204,3 +205,4 @@
 ---
 
 *Roadmap created: 2026-04-29*
+*Updated: 2026-04-29 - Phase order swapped (Subscription first)*
