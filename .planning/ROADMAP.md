@@ -58,7 +58,9 @@
 6. User can adjust playback speed from 0.5x to 3x and hear the change immediately
 7. Player displays as bottom bar (Spotify-style, persists across navigation)
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+- [x] 02-01-PLAN.md — Player foundation (PlayerStore, PlayerBar, controls)
 
 **UI hint:** yes
 
@@ -77,7 +79,9 @@
 2. User can close the app during an episode and return later to continue from the exact same position
 3. User can mark an episode as played or unplayed to track their progress
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+- [ ] 03-01-PLAN.md — Feed refresh, position persistence, played status
 
 **UI hint:** yes
 
@@ -164,9 +168,9 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Podcast Subscription & Library | 0/2 | Planned | - |
-| 2. Foundation & Playback | 0/1 | Not started | - |
-| 3. Feed Management & Progress | 0/1 | Not started | - |
+| 1. Podcast Subscription & Library | 2/2 | ✅ Completed | 2026-04-30 |
+| 2. Foundation & Playback | 1/1 | ✅ Completed | 2026-04-30 |
+| 3. Feed Management & Progress | 0/1 | In progress | - |
 | 4. Event Tracking & Background | 0/1 | Not started | - |
 | 5. Basic Statistics | 0/1 | Not started | - |
 | 6. Time-Grouped Statistics | 0/1 | Not started | - |
