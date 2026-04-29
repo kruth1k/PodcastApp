@@ -69,7 +69,7 @@ Explicitly excluded. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| Social sharing of statistics | Out of scope per PROJECT.md — personal stats focus |
+| Social sharing of statistics | Out of scope per PROJECT.md ï¿½ personal stats focus |
 | Podcast discovery/browse | Focus on existing library, not new content discovery |
 | Cross-device sync | Backend complexity, defer to future |
 | Video podcast support | Audio-only focus for v1 |
@@ -83,28 +83,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| POD-01 | Phase 1 | Pending |
-| POD-02 | Phase 1 | Pending |
-| POD-03 | Phase 1 | Pending |
-| POD-04 | Phase 2 | Pending |
-| PLAY-01 | Phase 1 | Pending |
-| PLAY-02 | Phase 1 | Pending |
-| PLAY-03 | Phase 1 | Pending |
-| PLAY-04 | Phase 1 | Pending |
-| PLAY-05 | Phase 1 | Pending |
-| PLAY-06 | Phase 2 | Pending |
-| PLAY-07 | Phase 2 | Pending |
-| LIB-01 | Phase 1 | Pending |
-| LIB-02 | Phase 2 | Pending |
-| LIB-03 | Phase 1 | Pending |
-| LIB-04 | Phase 2 | Pending |
-| STAT-01 | Phase 2 | Pending |
-| STAT-02 | Phase 3 | Pending |
-| STAT-03 | Phase 3 | Pending |
-| STAT-04 | Phase 3 | Pending |
-| STAT-05 | Phase 3 | Pending |
-| STAT-06 | Phase 3 | Pending |
-| STAT-07 | Phase 3 | Pending |
+| PLAY-01 | Phase 1 - Foundation & Playback | Pending |
+| PLAY-02 | Phase 1 - Foundation & Playback | Pending |
+| PLAY-03 | Phase 1 - Foundation & Playback | Pending |
+| PLAY-04 | Phase 1 - Foundation & Playback | Pending |
+| PLAY-05 | Phase 1 - Foundation & Playback | Pending |
+| POD-01 | Phase 2 - Podcast Subscription & Library | Pending |
+| POD-02 | Phase 2 - Podcast Subscription & Library | Pending |
+| POD-03 | Phase 2 - Podcast Subscription & Library | Pending |
+| LIB-01 | Phase 2 - Podcast Subscription & Library | Pending |
+| LIB-03 | Phase 2 - Podcast Subscription & Library | Pending |
+| POD-04 | Phase 3 - Feed Management & Progress | Pending |
+| PLAY-06 | Phase 3 - Feed Management & Progress | Pending |
+| LIB-02 | Phase 3 - Feed Management & Progress | Pending |
+| PLAY-07 | Phase 4 - Event Tracking & Background | Pending |
+| STAT-01 | Phase 4 - Event Tracking & Background | Pending |
+| STAT-02 | Phase 5 - Basic Statistics | Pending |
+| STAT-03 | Phase 5 - Basic Statistics | Pending |
+| STAT-04 | Phase 5 - Basic Statistics | Pending |
+| STAT-05 | Phase 6 - Time-Grouped Statistics | Pending |
+| STAT-06 | Phase 6 - Time-Grouped Statistics | Pending |
+| STAT-07 | Phase 6 - Time-Grouped Statistics | Pending |
+| LIB-04 | Phase 7 - Library Search | Pending |
 
 **Coverage:**
 - v1 requirements: 21 total
