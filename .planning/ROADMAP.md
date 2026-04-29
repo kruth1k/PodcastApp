@@ -32,7 +32,10 @@
 4. User can view all episodes for a specific podcast sorted by date
 5. User can view episode details including title, description, and duration
 
-**Plans:** TBD
+**Plans:** 2 plans
+
+- [ ] 01-01-PLAN.md — Database schema and API endpoints
+- [ ] 01-02-PLAN.md — RSS parsing service and frontend UI
 
 **UI hint:** yes
 
@@ -161,7 +164,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Podcast Subscription & Library | 0/1 | Not started | - |
+| 1. Podcast Subscription & Library | 0/2 | Planned | - |
 | 2. Foundation & Playback | 0/1 | Not started | - |
 | 3. Feed Management & Progress | 0/1 | Not started | - |
 | 4. Event Tracking & Background | 0/1 | Not started | - |
