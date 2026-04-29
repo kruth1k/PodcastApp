@@ -1,0 +1,399 @@
+import { create } from 'zustand';
+import { Howl } from 'howler';
+
+export interface Episode {
+  id: string;
+  podcast_od?: string;
+  title: string;
+  description: string;
+  audio_ur: string;
+  duration: number | null;
+  published_at: string;
+  guid: string;
+}
+
+const getStoredPosition = (episodeId: string): number | null => {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem(`podcast_position_${episodeId}`);
+  if (stored) {
+    try {
+      const data = JSON.parse(stored);
+      return typeof data.position === 'number' ? data.position : null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const savePosition = (episodeId: string, position: number): void => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(`podcast_position_${episodeId}`, JSON. stringify({
+    position,
+    updatedAt: Date. now()
+  }));
+};
+
+/** Generate a UUID v4 */
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math. random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v. toString(16);
+  });
+}
+
+interface PlayerState {
+  currentEpisode: Episode | null;
+  isPlaying: boolean;
+  position: number;
+  duration: number;
+  playbackRate: number;
+  volume: number;
+  howlInstance: Howl | null;
+  seekTimeout: NodeJS.Timeout | null;
+  playedEpisodes: Set<string>;
+  // Session tracking
+  currentSessionId: string | null;
+  lastProgressTime: number;
+  progressInterval: NodeJS.Timeout | null;
+  pauseTimestamp: number | null; // Track when pause started
+
+  playEpisode: (episode: Episode) => void;
+  togglePlay: () => void;
+  seek: (position: number) => void;
+  setPlaybackRate: (rate: number) => void;
+  skipForward: () => void;
+  skipBackward: () => void;
+  updatePosition: () => void;
+  loadPosition: (episodeId: string) => number | null;
+  isPlayed: (episodeId: string) => boolean;
+  togglePlayed: (episodeId: string) => void;
+  markEpisodePlayed: (episodeId: string) => void;
+
+  // Event capture (D-36)
+  captureEvent: (event_ type: 'play' | 'pause' | 'seek_ forward' | 'seek_ back' | 'complete' | 'progress', position: number, previous_ position?: number) => void;
+  startProgressHeartbeat: () => void;
+  stopProgressHeartbeat: () => void;
+  endSession: () => void;
+}
+
+/** Start the 30-second progress heartbeat (D-38) */
+function startProgressHeartbeat(state: PlayerState): void {
+  // Clear any existing heartbeat
+  if (state. progressInterval) {
+    clearInterval(state. progressInterval);
+  }
+
+  // Capture progress every 30 seconds (D-38)
+  const interval = setInterval(() => {
+    const current = usePlayerStore. getState();
+    if (current.isPlaying && current. howlInstance) {
+      const pos = current. howlInstance. seek();
+      if (typeof pos === 'number') {
+        current. captureEvent('progress', pos);
+      }
+    }
+  }, 30000);
+
+  state. progressInterval = interval;
+}
+
+/** Stop the progress heartbeat */
+function stopProgressHeartbeat(state: PlayerState): void {
+  if (state. progressInterval) {
+    clearInterval(state. progressInterval);
+    state. progressInterval = null;
+  }
+}
+
+export const usePlayerStore = create<PlayerState>((set, get) => ({
+  currentEpisode: null,
+  isPlaying: false,
+  position: 0,
+  duration: 0,
+  playbackRate: 1,
+  volume: 1,
+  howlInstance: null,
+  seekTimeout: null,
+  playedEpisodes: new Set<string>(),
+  currentSessionId: null,
+  lastProgressTime: 0,
+  progressInterval: null,
+  pauseTimestamp: null,
+
+  loadPosition: (episodeId: string) => {
+    return getStoredPosition(episodeId);
+  },
+
+  isPlayed: (episodeId: string): boolean => {
+    const { playedEpisodes } = get();
+    if (playedEpisodes. has(episodeId)) return true;
+    if (typeof window === 'undefined') return false;
+    return localStorage. getItem(`podcast_played_${episodeId}`) === 'true';
+  },
+
+  togglePlayed: (episodeId: string): void => {
+    if (typeof window === 'undefined') return;
+    const { playedEpisodes } = get();
+    const newSet = new Set(playedEpisodes);
+    if (localStorage. getItem(`podcast_played_${episodeId}`) === 'true') {
+      localStorage. removeItem(`podcast_played_${episodeId}`);
+      newSet. delete(episodeId);
+    } else {
+      localStorage. setItem(`podcast_played_${episodeId}`, 'true');
+      newSet. add(episodeId);
+    }
+    set({ playedEpisodes: newSet });
+  },
+
+  markEpisodePlayed: (episodeId: string): void => {
+    if (typeof window === 'undefined') return;
+    localStorage. setItem(`podcast_played_${episodeId}`, 'true');
+    const { playedEpisodes } = get();
+    const newSet = new Set(playedEpisodes);
+    newSet. add(episodeId);
+    set({ playedEpisodes: newSet });
+  },
+
+  /** Capture a listening event (D-36, D-37) */
+  captureEvent: (event_ type, position, previous_ position) => {
+    const { currentSessionId, lastProgressTime, currentEpisode } = get();
+    const now = Date. now();
+
+    // Skip duplicate progress events within 25 seconds (D-40)
+    if (event_ type === 'progress' && now - lastProgressTime < 25_000) {
+      return;
+    }
+
+    // Need an active session for event capture
+    if (!currentSessionId || !currentEpisode) {
+      return;
+    }
+
+    // Store in localStorage for statistics (D-39)
+    try {
+      const events = JSON. parse(localStorage. getItem('podcast_ stats_ events') || '[]');
+      const event = {
+        id: generateUUID(),
+        episode_ id: currentEpisode. id,
+        podcast_ id: currentEpisode. podcast_ id || '',
+        event_ type,
+        timestamp: now,
+        position_ seconds: position,
+        previous_ position,
+        playback_ rate: get(). playbackRate,
+        session_ id: currentSessionId,
+      };
+      events. push(event);
+      // Limit to last 10,000 events to prevent localStorage bloat
+      localStorage. setItem('podcast_ stats_ events', JSON. stringify(events. slice(-10_000)));
+    } catch {
+      // Ignore storage errors
+    }
+
+    set({ lastProgressTime: event_ type === 'progress' ? now : lastProgressTime });
+  },
+
+  startProgressHeartbeat: () => {
+    startProgressHeartbeat(get());
+  },
+
+  stopProgressHeartbeat: () => {
+    stopProgressHeartbeat(get());
+  },
+
+  endSession: () => {
+    set({ currentSessionId: null, pauseTimestamp: null });
+  },
+
+  playEpisode: (episode: Episode) => {
+    const state = get();
+    const { howlInstance, seekTimeout, currentEpisode, currentSessionId } = state;
+
+    // End previous session if exists
+    if (currentSessionId) {
+      state. captureEvent('complete', state. position);
+      state. stopProgressHeartbeat();
+    }
+
+    // Save position of current episode before switching
+    if (currentEpisode) {
+      const { position } = state;
+      savePosition(currentEpisode. id, position);
+    }
+
+    // Cleanup old howl instance
+    if (howlInstance) {
+      howlInstance. unload();
+    }
+    if (seekTimeout) {
+      clearTimeout(seekTimeout);
+    }
+
+    const savedPosition = getStoredPosition(episode. id);
+
+    // Create new session ID for this play session (D-38)
+    const newSessionId = generateUUID();
+
+    const howl = new Howl({
+      src: [episode. audio_ url],
+      html5: true,
+      preload: true,
+      rate: state. playbackRate,
+      volume: state. volume,
+      onload: () => {
+        set({ duration: howl. duration() });
+        if (savedPosition !== null && savedPosition > 0) {
+          howl. seek(savedPosition);
+        }
+      },
+      onplay: () => {
+        set({ isPlaying: true });
+        get(). updatePosition();
+      },
+      onpause: () => {
+        const { currentEpisode, position, pauseTimestamp } = get();
+        if (currentEpisode) {
+          savePosition(currentEpisode. id, position);
+        }
+        // Track pause timestamp for session management (D-38: pause > 30s ends session)
+        set({ isPlaying: false, pauseTimestamp: Date. now() });
+        // Capture pause event
+        get(). captureEvent('pause', position);
+      },
+      onend: () => {
+        const { currentEpisode } = get();
+        if (currentEpisode) {
+          localStorage. setItem(`podcast_ played_${currentEpisode. id}`, 'true');
+        }
+        get(). captureEvent('complete', get(). position);
+        set({ isPlaying: false, position: 0 });
+        // End session
+        state. stopProgressHeartbeat();
+        state. endSession();
+      },
+    });
+
+    howl. play();
+
+    // Start new session
+    set({
+      currentEpisode: episode,
+      howlInstance: howl,
+      isPlaying: true,
+      position: savedPosition || 0,
+      seekTimeout: null,
+      currentSessionId: newSessionId,
+      pauseTimestamp: null,
+    });
+
+    // Capture play event and start heartbeat
+    state. captureEvent('play', savedPosition || 0);
+    state. startProgressHeartbeat();
+  },
+
+  togglePlay: () => {
+    const state = get();
+    const { howlInstance, isPlaying, currentEpisode, position, currentSessionId, pauseTimestamp } = state;
+    if (!howlInstance) return;
+
+    if (isPlaying) {
+      // Pausing
+      if (currentEpisode) {
+        savePosition(currentEpisode. id, position);
+      }
+      howlInstance. pause();
+      // pauseTimestamp is set in onpause callback
+    } else {
+      // Resuming
+      howlInstance. play();
+      set({ pauseTimestamp: null });
+      // Check if pause was > 30 seconds - if so, end old session and start new one (D-38)
+      const now = Date. now();
+      if (pauseTimestamp && now - pauseTimestamp > 30_000 && currentSessionId) {
+        // Pause > 30 seconds, end session
+        state. stopProgressHeartbeat();
+        set({ currentSessionId: null });
+      }
+    }
+  },
+
+  seek: (position: number) => {
+    const state = get();
+    const { howlInstance, seekTimeout, currentEpisode, position: currentPos } = state;
+    if (!howlInstance) return;
+
+    if (seekTimeout) {
+      clearTimeout(seekTimeout);
+    }
+    // Capture seek event with previous position (D-36)
+    const event_ type = position > currentPos ? 'seek_ forward' : 'seek_ back';
+    state. captureEvent(event_ type, position, currentPos);
+    const timeout = setTimeout(() => {
+      if (howlInstance) {
+        howlInstance. seek(position);
+        set({ position, seekTimeout: null });
+        if (currentEpisode) {
+          savePosition(currentEpisode. id, position);
+        }
+      }
+    }, 50);
+
+    set({ position, seekTimeout: timeout });
+  },
+
+  setPlaybackRate: (rate: number) => {
+    const { howlInstance } = get();
+    if (howlInstance) {
+      howlInstance. rate(rate);
+    }
+    set({ playbackRate: rate });
+  },
+
+  skipForward: () => {
+    const state = get();
+    const { howlInstance, position, duration, seekTimeout, currentEpisode, position: currentPos } = state;
+    if (!howlInstance) return;
+    if (seekTimeout) clearTimeout(seekTimeout);
+    const newPosition = Math. min(position + 15, duration);
+    // Capture skip event (D-36)
+    state. captureEvent('seek_ forward', newPosition, currentPos);
+    howlInstance. seek(newPosition);
+    set({ position: newPosition, seekTimeout: null });
+    if (currentEpisode) {
+      savePosition(currentEpisode. id, newPosition);
+    }
+  },
+
+  skipBackward: () => {
+    const state = get();
+    const { howlInstance, position, seekTimeout, currentEpisode, position: currentPos } = state;
+    if (!howlInstance) return;
+    if (seekTimeout) clearTimeout(seekTimeout);
+    const newPosition = Math. max(position - 30, 0);
+    // Capture skip event (D-36)
+    state. captureEvent('seek_ back', newPosition, currentPos);
+    howlInstance. seek(newPosition);
+    set({ position: newPosition, seekTimeout: null });
+    if (currentEpisode) {
+      savePosition(currentEpisode. id, newPosition);
+    }
+  },
+
+  updatePosition: () => {
+    const state = get();
+    const { howlInstance, isPlaying, seekTimeout, currentEpisode, duration } = state;
+    if (!howlInstance || !isPlaying) return;
+    const pos = howlInstance. seek();
+    if (typeof pos === 'number') {
+      set({ position: pos });
+      if (currentEpisode && duration > 0 && pos / duration > 0.9) {
+        state. markEpisodePlayed(currentEpisode. id);
+      }
+    }
+    if (get().isPlaying && !get(). seekTimeout) {
+      requestAnimationFrame(() => state. updatePosition());
+    }
+  },
+}));

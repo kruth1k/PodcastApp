@@ -14,6 +14,7 @@ export interface Podcast {
 
 export interface Episode {
   id: string;
+  podcast_id?: string;
   title: string;
   description: string | null;
   audio_url: string;
@@ -53,6 +54,22 @@ export const api = {
   getEpisodes: async (podcastId: string): Promise<Episode[]> => {
     const res = await fetch(`${API_URL}/api/episodes?podcast_id=${podcastId}`);
     if (!res.ok) throw new Error('Failed to fetch episodes');
+    return res.json();
+  },
+
+  refreshPodcast: async (podcastId: string): Promise<Podcast> => {
+    const res = await fetch(`${API_URL}/api/podcasts/${podcastId}/refresh`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Failed to refresh podcast');
+    return res.json();
+  },
+
+  refreshAllPodcasts: async (): Promise<{ id: string; title: string; new_episodes: number; success: boolean }[]> => {
+    const res = await fetch(`${API_URL}/api/podcasts/refresh-all`, {
+      method: 'POST',
+    });
+    if (!res.ok) throw new Error('Failed to refresh all podcasts');
     return res.json();
   },
 };

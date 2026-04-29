@@ -8,7 +8,7 @@
 - [ ] **Phase 1: Podcast Subscription & Library** - Subscribe to podcasts and view episode lists
 - [ ] **Phase 2: Foundation & Playback** - Core audio playback engine with basic controls
 - [ ] **Phase 3: Feed Management & Progress** - Refresh feeds and persist playback position
-- [ ] **Phase 4: Event Tracking & Background** - Capture listening events and background playback
+- [x] **Phase 4: Event Tracking & Background** - Capture listening events and background playback
 - [ ] **Phase 5: Basic Statistics** - Total listening time and top podcasts/episodes
 - [ ] **Phase 6: Time-Grouped Statistics** - Week/month/year grouped analytics
 - [ ] **Phase 7: Library Search** - Search episodes within library
@@ -100,7 +100,9 @@
 2. System accurately tracks minutes watched for each episode session
 3. User can control playback from a system notification when app is backgrounded
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+- [x] 04-01-PLAN.md — Background playback and event tracking
 
 **UI hint:** yes
 
@@ -170,8 +172,8 @@
 |-------|----------------|--------|-----------|
 | 1. Podcast Subscription & Library | 2/2 | ✅ Completed | 2026-04-30 |
 | 2. Foundation & Playback | 1/1 | ✅ Completed | 2026-04-30 |
-| 3. Feed Management & Progress | 0/1 | In progress | - |
-| 4. Event Tracking & Background | 0/1 | Not started | - |
+| 3. Feed Management & Progress | 1/1 | ✅ Completed | 2026-04-30 |
+| 4. Event Tracking & Background | 1/1 | ✅ Completed | 2026-04-30 |
 | 5. Basic Statistics | 0/1 | Not started | - |
 | 6. Time-Grouped Statistics | 0/1 | Not started | - |
 | 7. Library Search | 0/1 | Not started | - |
