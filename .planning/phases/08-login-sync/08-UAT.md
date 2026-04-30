@@ -73,18 +73,7 @@
 
 ## Known Issues
 
-None - all endpoints working as expected.
-
----
-
-## Database Tables
-
-- ✅ users
-- ✅ podcasts (updated with user_id)
-- ✅ episodes
-- ✅ listening_events
-- ✅ playback_positions
-- ✅ refresh_tokens
+- **FIXED:** Extra bracket in api.ts causing build error - resolved
 
 ---
 
