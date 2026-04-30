@@ -182,6 +182,16 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       events.push(event);
       // Limit to last 10,000 to prevent localStorage bloat
       localStorage.setItem('podcast_stats_events', JSON.stringify(events.slice(-10000)));
+      
+      // Trigger daily stats aggregation
+      try {
+        const statsStore = require('@/stores/statsStore').useStatsStore.getState();
+        if (statsStore?.aggregateDailyStats) {
+          statsStore.aggregateDailyStats();
+        }
+      } catch {
+        // Ignore stats store errors
+      }
     } catch {
       // Ignore storage errors
     }
@@ -242,8 +252,6 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       },
     });
 
-    howl.play();
-    
     set({
       currentEpisode: episode,
       howlInstance: howl,
@@ -254,8 +262,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       pauseTimestamp: null,
     });
     
-    state.captureEvent('play', savedPosition || 0);
-    state.startProgressHeartbeat();
+    howl.play();
+    
+    get().captureEvent('play', savedPosition || 0);
+    get().startProgressHeartbeat();
   },
 
   togglePlay: () => {
@@ -269,6 +279,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     } else {
       howlInstance.play();
       set({ pauseTimestamp: null });
+      
+      // Emit 'play' event if resuming after pause
+      if (!currentSessionId) {
+        const newSessionId = generateUUID();
+        set({ currentSessionId: newSessionId });
+        get().captureEvent('play', position);
+        get().startProgressHeartbeat();
+      } else {
+        get().captureEvent('play', position);
+      }
+      
       // Pause > 30 seconds ends session (D-38)
       const now = Date.now();
       if (pauseTimestamp && now - pauseTimestamp > 30000 && currentSessionId) {

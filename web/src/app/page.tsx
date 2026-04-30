@@ -15,7 +15,7 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
-  const { selectedPodcast, selectPodcast, addPodcast, fetchPodcasts, isLoading, error, searchEpisodes, podcasts } = usePodcastStore();
+  const { selectedPodcast, selectPodcast, addPodcast, fetchPodcasts, isLoading, error, searchEpisodes, searchPodcasts, podcasts } = usePodcastStore();
 
   useEffect(() => {
     fetchPodcasts();
@@ -37,13 +37,43 @@ export default function Home() {
       setShowResults(false);
       return;
     }
-    const timer = setTimeout(() => {
-      const results = searchEpisodes(searchQuery);
-      setSearchResults(results);
+    const timer = setTimeout(async () => {
+      // Search local podcasts and episodes
+      const podcastResults = searchPodcasts(searchQuery);
+      const episodeResults = searchEpisodes(searchQuery);
+      
+      // Combine local results
+      const localResults = [
+        ...podcastResults.map(p => ({ type: 'podcast' as const, id: p.id, title: p.title, podcastTitle: p.title, podcastId: p.id })),
+        ...episodeResults.map(e => ({ ...e, type: 'episode' as const }))
+      ];
+      
+      // If no local results, search iTunes
+      if (localResults.length === 0 && searchQuery.trim().length >= 2) {
+        try {
+          const itunesRes = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(searchQuery)}&media=podcast&limit=10`);
+          const itunesData = await itunesRes.json();
+          const itunesResults = itunesData.results.map((r: any) => ({
+            type: 'discovery' as const,
+            id: r.collectionId?.toString() || r.trackId?.toString() || Math.random().toString(),
+            title: r.collectionName || r.trackName,
+            podcastTitle: r.artistName,
+            podcastId: '',
+            feedUrl: r.feedUrl
+          }));
+          setSearchResults(itunesResults);
+          setShowResults(true);
+          return;
+        } catch (err) {
+          console.error('iTunes search failed:', err);
+        }
+      }
+      
+      setSearchResults(localResults.slice(0, 10));
       setShowResults(true);
-    }, 300);
+    }, 150);
     return () => clearTimeout(timer);
-  }, [searchQuery, searchEpisodes]);
+  }, [searchQuery, searchEpisodes, searchPodcasts]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +94,19 @@ export default function Home() {
     }
   };
 
-  const handleSearchSelect = (podcastId: string, episodeId: string) => {
+  const handleSearchSelect = async (podcastId: string, episodeId?: string, feedUrl?: string) => {
+    // If it's a discovery result (not in library), add the podcast
+    if (feedUrl) {
+      try {
+        await addPodcast(feedUrl);
+        setShowResults(false);
+        setSearchQuery('');
+      } catch (err) {
+        console.error('Failed to add podcast:', err);
+      }
+      return;
+    }
+    
     const podcast = podcasts.find((p) => p.id === podcastId);
     if (podcast) {
       selectPodcast(podcast);
@@ -126,7 +168,7 @@ export default function Home() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Search episodes in your library..."
+            placeholder="Search podcasts and episodes..."
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <SearchResults

@@ -43,7 +43,7 @@ def parse_feed(url: str) -> Dict:
     elif hasattr(channel, "itunes_image"):
         podcast_data["image_url"] = channel.itunes_image.get("href")
     
-    for entry in feed.entries[:50]:
+    for entry in feed.entries:
         episode = {
             "title": entry.get("title", "Unknown Episode"),
             "description": entry.get("description") or entry.get("summary"),

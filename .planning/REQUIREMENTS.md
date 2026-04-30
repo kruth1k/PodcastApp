@@ -41,6 +41,12 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **STAT-06**: User can view statistics grouped by month
 - [ ] **STAT-07**: User can view statistics grouped by year
 
+### Authentication & Sync
+
+- [ ] **AUTH-01**: User can create account with email and password
+- [ ] **AUTH-02**: User can log in with credentials
+- [ ] **SYNC-01**: User's podcasts and statistics sync across devices
+
 ## v2 Requirements
 
 Deferred to future release. Tracked but not in current roadmap.

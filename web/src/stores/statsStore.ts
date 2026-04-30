@@ -38,6 +38,9 @@ function generateUUID(): string {
  */
 const EVENTS_STORAGE_KEY = 'podcast_stats_events';
 const DAILY_STORAGE_KEY = 'podcast_stats_daily';
+const WEEKLY_STORAGE_KEY = 'podcast_stats_weekly';
+const MONTHLY_STORAGE_KEY = 'podcast_stats_monthly';
+const YEARLY_STORAGE_KEY = 'podcast_stats_yearly';
 const PROGRESS_MIN_INTERVAL = 25000; // Minimum 25s between progress captures (D-40)
 /**
  * Load events from localStorage
@@ -85,13 +88,173 @@ function saveDailyStats(dailyStats: DailyStats[]): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(DAILY_STORAGE_KEY, JSON.stringify(dailyStats));
 }
+/**
+ * Load weekly stats from localStorage
+ */
+function loadWeeklyStats(): WeeklyStats[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(WEEKLY_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return [];
+}
+/**
+ * Save weekly stats to localStorage
+ */
+function saveWeeklyStats(weeklyStats: WeeklyStats[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(WEEKLY_STORAGE_KEY, JSON.stringify(weeklyStats));
+}
+/**
+ * Load monthly stats from localStorage
+ */
+function loadMonthlyStats(): MonthlyStats[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(MONTHLY_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return [];
+}
+/**
+ * Save monthly stats to localStorage
+ */
+function saveMonthlyStats(monthlyStats: MonthlyStats[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(MONTHLY_STORAGE_KEY, JSON.stringify(monthlyStats));
+}
+/**
+ * Load yearly stats from localStorage
+ */
+function loadYearlyStats(): YearlyStats[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(YEARLY_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return [];
+}
+/**
+ * Save yearly stats to localStorage
+ */
+function saveYearlyStats(yearlyStats: YearlyStats[]): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(YEARLY_STORAGE_KEY, JSON.stringify(yearlyStats));
+}
+export type TimePeriod = '7days' | '30days' | 'year' | 'all';
+
+/**
+ * Weekly stats - grouped by ISO week
+ */
+export interface WeeklyStats {
+  week: string;        // "2026-W17" (ISO week)
+  total_seconds: number;
+  session_count: number;
+}
+/**
+ * Monthly stats - grouped by month
+ */
+export interface MonthlyStats {
+  month: string;       // "2026-04"
+  total_seconds: number;
+  session_count: number;
+}
+/**
+ * Yearly stats - grouped by year
+ */
+export interface YearlyStats {
+  year: string;        // "2026"
+  total_seconds: number;
+  session_count: number;
+}
+/**
+ * Time group type for UI
+ */
+export type TimeGroup = 'week' | 'month' | 'year';
+
+/**
+ * Get ISO week string from date
+ */
+function getISOWeek(date: Date): string {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const yearStart = new Date(d.getFullYear(), 0, 1);
+  const days = Math.floor((d.getTime() - yearStart.getTime()) / (24 * 60 * 60 * 1000));
+  const weekNum = Math.ceil((days + yearStart.getDay() + 1) / 7);
+  return `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Get month string from date
+ */
+function getMonthString(date: Date): string {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+/**
+ * Get year string from date
+ */
+function getYearString(date: Date): string {
+  return date.getFullYear().toString();
+}
+
+interface PodcastStats {
+  podcast_id: string;
+  total_seconds: number;
+  session_count: number;
+}
+
+interface EpisodeStats {
+  episode_id: string;
+  total_seconds: number;
+  session_count: number;
+}
+
+function getStartDate(period: TimePeriod): string {
+  const now = new Date();
+  switch (period) {
+    case '7days':
+      return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    case '30days':
+      return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    case 'year':
+      return new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    case 'all':
+    default:
+      return '1970-01-01';
+  }
+}
+
 interface StatsState {
   events: ListeningEvent[];
   dailyStats: DailyStats[];
+  weeklyStats: WeeklyStats[];
+  monthlyStats: MonthlyStats[];
+  yearlyStats: YearlyStats[];
   currentSessionId: string | null;
-  lastProgressTime: number; // For deduplication
-  /**   * Capture a playback event
-   */
+  lastProgressTime: number;
+  getTotalListeningTime: (period?: TimePeriod) => number;
+  getPodcastStats: (period?: TimePeriod) => PodcastStats[];
+  getEpisodeStats: (period?: TimePeriod) => EpisodeStats[];
+  getWeeklyStats: (limit?: number) => WeeklyStats[];
+  getMonthlyStats: (limit?: number) => MonthlyStats[];
+  getYearlyStats: (limit?: number) => YearlyStats[];
   captureEvent: (
     event_type: ListeningEvent['event_type'],
     position: number,
@@ -99,30 +262,18 @@ interface StatsState {
     episode_id?: string,
     podcast_id?: string
   ) => void;
-  /**
-   * Start a new listening session (called on play)
-   */
   startSession: (episode_id: string, podcast_id: string) => string;
-  /**
-   * End the current session
-   */
   endSession: () => void;
-  /**
-   * Aggregate events into daily stats
-   */
   aggregateDailyStats: () => void;
-  /**
-   * Get total listening time for a podcast within a date range
-   */
   getListeningTime: (podcast_id: string, startDate: string, endDate: string) => number;
-  /**
-   * Get session count for a podcast within a date range
-   */
   getSessionCount: (podcast_id: string, startDate: string, endDate: string) => number;
 }
 export const useStatsStore = create<StatsState>((set, get) => ({
   events: loadEvents(),
   dailyStats: loadDailyStats(),
+  weeklyStats: loadWeeklyStats(),
+  monthlyStats: loadMonthlyStats(),
+  yearlyStats: loadYearlyStats(),
   currentSessionId: null,
   lastProgressTime: 0,
   captureEvent: (
@@ -197,7 +348,8 @@ export const useStatsStore = create<StatsState>((set, get) => ({
     set({ currentSessionId: null });
   },
   aggregateDailyStats: () => {
-    const { events } = get();
+    // Read fresh events from localStorage (playerStore writes directly)
+    const events = loadEvents();
     const byDateAndPodcast = new Map<string, DailyStats>();
     for (const event of events) {
       // Only count progress events as actual listening time
@@ -234,7 +386,46 @@ export const useStatsStore = create<StatsState>((set, get) => ({
     }
     const newDailyStats = Array.from(byDateAndPodcast.values());
     saveDailyStats(newDailyStats);
-    set({ dailyStats: newDailyStats });
+
+    // Also aggregate weekly/monthly/yearly stats
+    const byWeek = new Map<string, WeeklyStats>();
+    const byMonth = new Map<string, MonthlyStats>();
+    const byYear = new Map<string, YearlyStats>();
+    
+    for (const stat of newDailyStats) {
+      const date = new Date(stat.date);
+      
+      // Weekly aggregation
+      const week = getISOWeek(date);
+      const weeklyExisting = byWeek.get(week) || { week, total_seconds: 0, session_count: 0 };
+      weeklyExisting.total_seconds += stat.total_seconds;
+      weeklyExisting.session_count += stat.session_count;
+      byWeek.set(week, weeklyExisting);
+      
+      // Monthly aggregation
+      const month = getMonthString(date);
+      const monthlyExisting = byMonth.get(month) || { month, total_seconds: 0, session_count: 0 };
+      monthlyExisting.total_seconds += stat.total_seconds;
+      monthlyExisting.session_count += stat.session_count;
+      byMonth.set(month, monthlyExisting);
+      
+      // Yearly aggregation
+      const year = getYearString(date);
+      const yearlyExisting = byYear.get(year) || { year, total_seconds: 0, session_count: 0 };
+      yearlyExisting.total_seconds += stat.total_seconds;
+      yearlyExisting.session_count += stat.session_count;
+      byYear.set(year, yearlyExisting);
+    }
+    
+    const newWeeklyStats = Array.from(byWeek.values()).sort((a, b) => b.week.localeCompare(a.week));
+    const newMonthlyStats = Array.from(byMonth.values()).sort((a, b) => b.month.localeCompare(a.month));
+    const newYearlyStats = Array.from(byYear.values()).sort((a, b) => b.year.localeCompare(a.year));
+    
+    saveWeeklyStats(newWeeklyStats);
+    saveMonthlyStats(newMonthlyStats);
+    saveYearlyStats(newYearlyStats);
+    
+    set({ dailyStats: newDailyStats, weeklyStats: newWeeklyStats, monthlyStats: newMonthlyStats, yearlyStats: newYearlyStats, events });
   },
   getListeningTime: (podcast_id: string, startDate: string, endDate: string) => {
     const { dailyStats } = get();
@@ -257,5 +448,69 @@ export const useStatsStore = create<StatsState>((set, get) => ({
           s.date <= endDate
       )
       .reduce((acc, s) => acc + s.session_count, 0);
+  },
+  getTotalListeningTime: (period: TimePeriod = 'all') => {
+    const { dailyStats } = get();
+    const startDate = getStartDate(period);
+    return dailyStats
+      .filter((s) => s.date >= startDate)
+      .reduce((acc, s) => acc + s.total_seconds, 0);
+  },
+  getPodcastStats: (period: TimePeriod = 'all') => {
+    const { dailyStats } = get();
+    const startDate = getStartDate(period);
+    const filteredStats = dailyStats.filter((s) => s.date >= startDate);
+    const byPodcast = new Map<string, PodcastStats>();
+    for (const stat of filteredStats) {
+      const existing = byPodcast.get(stat.podcast_id) || {
+        podcast_id: stat.podcast_id,
+        total_seconds: 0,
+        session_count: 0,
+      };
+      existing.total_seconds += stat.total_seconds;
+      existing.session_count += stat.session_count;
+      byPodcast.set(stat.podcast_id, existing);
+    }
+    return Array.from(byPodcast.values()).sort((a, b) => b.total_seconds - a.total_seconds);
+  },
+  getEpisodeStats: (period: TimePeriod = 'all') => {
+    const { events } = get();
+    const startDate = getStartDate(period);
+    const filteredEvents = events.filter((e) => {
+      const eventDate = new Date(e.timestamp).toISOString().split('T')[0];
+      return eventDate >= startDate;
+    });
+    const byEpisode = new Map<string, EpisodeStats>();
+    for (const event of filteredEvents) {
+      if (event.event_type !== 'progress') continue;
+      const existing = byEpisode.get(event.episode_id) || {
+        episode_id: event.episode_id,
+        total_seconds: 0,
+        session_count: 0,
+      };
+      existing.total_seconds += 30;
+      byEpisode.set(event.episode_id, existing);
+    }
+    for (const event of filteredEvents) {
+      if (event.event_type === 'play') {
+        const existing = byEpisode.get(event.episode_id);
+        if (existing) {
+          existing.session_count += 1;
+        }
+      }
+    }
+    return Array.from(byEpisode.values()).sort((a, b) => b.total_seconds - a.total_seconds);
+  },
+  getWeeklyStats: (limit: number = 12) => {
+    const { weeklyStats } = get();
+    return weeklyStats.slice(0, limit);
+  },
+  getMonthlyStats: (limit: number = 12) => {
+    const { monthlyStats } = get();
+    return monthlyStats.slice(0, limit);
+  },
+  getYearlyStats: (limit: number = 5) => {
+    const { yearlyStats } = get();
+    return yearlyStats.slice(0, limit);
   },
 }));

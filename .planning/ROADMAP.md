@@ -12,6 +12,7 @@
 - [ ] **Phase 5: Basic Statistics** - Total listening time and top podcasts/episodes
 - [ ] **Phase 6: Time-Grouped Statistics** - Week/month/year grouped analytics
 - [ ] **Phase 7: Library Search** - Search episodes within library
+- [ ] **Phase 8: Login & Cross-Device Sync** - User accounts with cloud sync
 
 ---
 
@@ -170,6 +171,29 @@
 
 ---
 
+## Phase 8: Login & Cross-Device Sync
+
+**Goal:** Users can create accounts and sync their data across devices
+
+**Depends on:** Phase 7
+
+**Requirements:** AUTH-01, AUTH-02, SYNC-01
+
+**Success Criteria** (what must be TRUE):
+1. User can create an account with email and password
+2. User can log in with their credentials
+3. User's podcasts, episodes, and statistics sync across devices
+4. App works offline without login (guest mode)
+5. Existing guest data auto-migrates on account creation
+
+**Plans:** 1 plan
+
+- [x] 08-01-PLAN.md — Login & Cross-Device Sync implementation (GSD format)
+
+**UI hint:** yes
+
+---
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -181,6 +205,7 @@
 | 5. Basic Statistics | 1/1 | ✅ Completed | 2026-04-30 |
 | 6. Time-Grouped Statistics | 1/1 | ✅ Completed | 2026-04-30 |
 | 7. Library Search | 1/1 | 🔄 Ready | - |
+| 8. Login & Cross-Device Sync | 0/1 | Pending | - |
 
 ---
 

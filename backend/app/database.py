@@ -3,9 +3,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
+# Default to local postgres with postgres user (for local development)
+# Use DATABASE_URL env var to override (e.g., when running in docker)
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://podcast_user:podcast_password@localhost:5432/podcast_stats"
+    "postgresql://postgres:postgres@localhost:5432/podcast_stats"
 )
 
 engine = create_engine(DATABASE_URL)

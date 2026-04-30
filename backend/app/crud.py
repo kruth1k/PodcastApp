@@ -1,5 +1,5 @@
 from typing import List, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app import models, schemas
 from datetime import datetime
 import uuid
@@ -19,7 +19,7 @@ def create_podcast(db: Session, podcast_data: dict) -> models.Podcast:
     return podcast
 
 def get_podcasts(db: Session) -> List[models.Podcast]:
-    return db.query(models.Podcast).order_by(models.Podcast.created_at.desc()).all()
+    return db.query(models.Podcast).options(joinedload(models.Podcast.episodes)).order_by(models.Podcast.created_at.desc()).all()
 
 def get_podcast(db: Session, podcast_id: str) -> Optional[models.Podcast]:
     return db.query(models.Podcast).filter(models.Podcast.id == podcast_id).first()

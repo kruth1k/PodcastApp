@@ -7,21 +7,10 @@ from app.services.rss_parser import parse_feed
 
 router = APIRouter()
 
-@router.get("", response_model=List[schemas.PodcastListResponse])
+@router.get("", response_model=List[schemas.PodcastResponse])
 def get_podcasts(db: Session = Depends(database.get_db)):
     podcasts = crud.get_podcasts(db)
-    result = []
-    for podcast in podcasts:
-        result.append(schemas.PodcastListResponse(
-            id=podcast.id,
-            title=podcast.title,
-            description=podcast.description,
-            feed_url=podcast.feed_url,
-            image_url=podcast.image_url,
-            author=podcast.author,
-            episode_count=len(podcast.episodes)
-        ))
-    return result
+    return podcasts
 
 @router.post("", response_model=schemas.PodcastResponse, status_code=status.HTTP_201_CREATED)
 def add_podcast(podcast_data: schemas.PodcastCreate, db: Session = Depends(database.get_db)):

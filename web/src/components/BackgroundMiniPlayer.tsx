@@ -8,6 +8,7 @@ import { useVisibilityChange } from '@/hooks/useVisibilityChange';
 export function BackgroundMiniPlayer() {
   const [isVisible, setIsVisible] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [debug, setDebug] = useState('');
   
   // Player state
   const currentEpisode = usePlayerStore((state) => state.currentEpisode);
@@ -25,16 +26,24 @@ export function BackgroundMiniPlayer() {
 
   // Detect when tab becomes hidden
   useVisibilityChange((hidden: boolean) => {
-    setIsVisible(hidden && !!currentEpisode);
+    const episode = usePlayerStore.getState().currentEpisode;
+    setDebug(`hidden=${hidden} episode=${!!episode} mounted=${mounted}`);
+    setIsVisible(hidden && !!episode);
   });
 
-  if (!mounted || !isVisible || !currentEpisode) {
+  if (!mounted) return null;
+  
+  // TEMP: Show always when playing for testing
+  const showAlways = isPlaying && currentEpisode;
+  if (!showAlways && !isVisible) {
     return null;
   }
 
+  if (!currentEpisode) return null;
+
   // Find the podcast for the current episode
   const podcast = currentEpisode.podcast_id
-    ? podcasts.find((p) => p.id === currentEpisode.podcast_id)
+    ? podcasts.find((p) => p.id === currentEpisode.podcast_id) || null
     : null;
 
   const handleClose = () => {
@@ -49,6 +58,7 @@ export function BackgroundMiniPlayer() {
       className="fixed top-4 right-4 z-[9999] min-w-[320px] bg-[#1a1a1a] rounded-lg shadow-2xl overflow-hidden"
       role="region"
       aria-label="Background mini player"
+      style={{ border: '2px solid red' }}
     >
       {/* Header with close button */}
       <div className="flex items-center justify-between px-4 py-3 bg-[#2a2a2a]">

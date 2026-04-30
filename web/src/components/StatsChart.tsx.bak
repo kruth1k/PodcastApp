@@ -1,0 +1,178 @@
+'use client';
+
+import { useState } from 'react';
+import { WeeklyStats, MonthlyStats, YearlyStats, TimeGroup } from '@/stores/statsStore';
+
+function getISOWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+}
+
+interface StatsChartProps {
+  weeklyData?: WeeklyStats[];
+  monthlyData?: MonthlyStats[];
+  yearlyData?: YearlyStats[];
+  groupBy: TimeGroup;
+  navDate?: Date;
+  onNavDateChange?: (date: Date) => void;
+}
+
+/**
+ * Format seconds to human readable string
+ */
+function formatTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  return `${hours}h ${mins}m`;
+}
+
+/**
+ * Get short label for period
+ */
+function getLabel(period: string, groupBy: TimeGroup): string {
+  if (groupBy === 'week') {
+    // "2026-W17" -> "W17"
+    return period.split('-W')[1] || period;
+  }
+  if (groupBy === 'month') {
+    // "2026-04" -> "Apr"
+    const [, month] = period.split('-');
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthNum = parseInt(month, 10);
+    return monthNames[monthNum - 1] || month;
+  }
+  // year: "2026" -> "2026"
+  return period;
+}
+
+function generatePeriods(groupBy: TimeGroup, baseDate: Date): string[] {
+  const periods: string[] = [];
+  
+  if (groupBy === 'week') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(baseDate.getTime() - i * 7 * 24 * 60 * 60 * 1000);
+      periods.push(getISOWeek(d));
+    }
+  } else if (groupBy === 'month') {
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(baseDate.getFullYear(), baseDate.getMonth() - i, 1);
+      periods.push(getMonthString(d));
+    }
+  } else {
+    for (let i = 4; i >= 0; i--) {
+      periods.push(String(baseDate.getFullYear() - i));
+    }
+  }
+  return periods;
+}
+
+function getMonthString(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export default function StatsChart({ weeklyData, monthlyData, yearlyData, groupBy, navDate: propNavDate, onNavDateChange }: StatsChartProps) {
+  const [internalNavDate, setInternalNavDate] = useState(new Date());
+  const navDate = propNavDate || internalNavDate;
+  
+  const setNavDate = (newDate: Date) => {
+    if (onNavDateChange) {
+      onNavDateChange(newDate);
+    } else {
+      setInternalNavDate(newDate);
+    }
+  };
+
+  const goBack = () => {
+    const newDate = new Date(navDate);
+    if (groupBy === 'week') newDate.setDate(newDate.getDate() - 7);
+    else if (groupBy === 'month') newDate.setMonth(newDate.getMonth() - 1);
+    else newDate.setFullYear(newDate.getFullYear() - 1);
+    setNavDate(newDate);
+  };
+
+  const goForward = () => {
+    const newDate = new Date(navDate);
+    if (groupBy === 'week') newDate.setDate(newDate.getDate() + 7);
+    else if (groupBy === 'month') newDate.setMonth(newDate.getMonth() + 1);
+    else newDate.setFullYear(newDate.getFullYear() + 1);
+    setNavDate(newDate);
+  };
+
+  const getLabel = () => {
+    if (groupBy === 'week') {
+      const startOfWeek = new Date(navDate);
+      startOfWeek.setDate(navDate.getDate() - navDate.getDay());
+      return startOfWeek.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    }
+    if (groupBy === 'month') {
+      return navDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+    return navDate.getFullYear().toString();
+  };
+
+  let rawData: { period: string; total_seconds: number; session_count: number }[] = [];
+  let maxValue = 0;
+
+  if (groupBy === 'week' && weeklyData) {
+    rawData = weeklyData.map((w) => ({ period: w.week, total_seconds: w.total_seconds, session_count: w.session_count }));
+  } else if (groupBy === 'month' && monthlyData) {
+    rawData = monthlyData.map((m) => ({ period: m.month, total_seconds: m.total_seconds, session_count: m.session_count }));
+  } else if (groupBy === 'year' && yearlyData) {
+    rawData = yearlyData.map((y) => ({ period: y.year, total_seconds: y.total_seconds, session_count: y.session_count }));
+  }
+
+  const dataMap = new Map(rawData.map(d => [d.period, d]));
+  const allPeriods = generatePeriods(groupBy, navDate);
+  const data = allPeriods.map(period => {
+    const existing = dataMap.get(period);
+    return existing || { period, total_seconds: 0, session_count: 0 };
+  });
+
+  if (data.length > 0) {
+    maxValue = Math.max(...data.map((d) => d.total_seconds));
+  }
+
+  if (maxValue === 0) {
+    return (
+      <div className="bg-white rounded-lg shadow p-6">
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={goBack} className="p-2 hover:bg-gray-100 rounded">&lt;</button>
+          <span className="font-medium">{getLabel()}</span>
+          <button onClick={goForward} className="p-2 hover:bg-gray-100 rounded">&gt;</button>
+        </div>
+        <p className="text-gray-500 text-center py-8">No data for this period</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow p-6">
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={goBack} className="p-2 hover:bg-gray-100 rounded">&lt;</button>
+        <span className="font-medium">{getLabel()}</span>
+        <button onClick={goForward} className="p-2 hover:bg-gray-100 rounded">&gt;</button>
+      </div>
+      <div className="flex items-end gap-2 h-48">
+        {data.map((item, index) => {
+          const percentage = maxValue > 0 ? (item.total_seconds / maxValue) * 100 : 0;
+          return (
+            <div key={index} className="flex-1 flex flex-col items-center group">
+              <div
+                className="w-full bg-blue-500 rounded-t transition-all duration-200 hover:bg-blue-600 hover:scale-105"
+                style={{ height: `${Math.max(percentage, 2)}%` }}
+                title={`${item.period}: ${formatTime(item.total_seconds)}`}
+              />
+              <span className="text-xs text-gray-500 mt-2">{getLabel(item.period, groupBy)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

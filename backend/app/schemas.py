@@ -7,6 +7,7 @@ class PodcastCreate(BaseModel):
 
 class EpisodeResponse(BaseModel):
     id: str
+    podcast_id: Optional[str] = None
     title: str
     description: Optional[str]
     audio_url: str

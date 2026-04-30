@@ -23,7 +23,7 @@ export default function EpisodeList() {
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
       {episodes.map((episode) => (
         <EpisodeCard key={episode.id} episode={episode} />
       ))}
