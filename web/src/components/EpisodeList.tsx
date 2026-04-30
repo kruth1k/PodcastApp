@@ -30,50 +30,76 @@ export default function EpisodeList() {
   const startIndex = (currentPage - 1) * EPISODES_PER_PAGE;
   const visibleEpisodes = episodes.slice(startIndex, startIndex + EPISODES_PER_PAGE);
 
+  const getVisiblePages = () => {
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start + 1 < maxVisible) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  };
+
+  const visiblePages = getVisiblePages();
+
   const goToPage = (page: number) => {
     setCurrentPage(page);
   };
 
   return (
-    <div>
-      <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
+      <div className="space-y-3">
         {visibleEpisodes.map((episode) => (
           <EpisodeCard key={episode.id} episode={episode} />
         ))}
       </div>
       
       {totalPages > 1 && (
-        <div className="mt-4 flex justify-center items-center gap-2">
+        <div className="mt-4 flex flex-wrap justify-center items-center gap-1 pt-4 border-t">
+          <button
+            onClick={() => goToPage(1)}
+            disabled={currentPage === 1}
+            className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            First
+          </button>
+          
           <button
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
-            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Previous
+            Prev
           </button>
           
-          <div className="flex gap-1">
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-              <button
-                key={page}
-                onClick={() => goToPage(page)}
-                className={`px-3 py-1 text-sm rounded-lg ${
-                  page === currentPage
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-          </div>
+          {visiblePages.map(page => (
+            <button
+              key={page}
+              onClick={() => goToPage(page)}
+              className={`px-2 py-1 text-xs rounded ${
+                page === currentPage
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
           
           <button
             onClick={() => goToPage(currentPage + 1)}
             disabled={currentPage === totalPages}
-            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Next
+          </button>
+          
+          <button
+            onClick={() => goToPage(totalPages)}
+            disabled={currentPage === totalPages}
+            className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Last
           </button>
         </div>
       )}
