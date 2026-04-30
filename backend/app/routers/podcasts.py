@@ -37,9 +37,12 @@ def add_podcast(podcast_data: schemas.PodcastCreate, request: Request, db: Sessi
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Failed to parse RSS feed: {str(e)}")
     
-    existing = db.query(models.Podcast).filter_by(feed_url=podcast_data.feed_url).first()
+    existing = db.query(models.Podcast).filter(
+        models.Podcast.feed_url == podcast_data.feed_url,
+        models.Podcast.user_id == user_id
+    ).first()
     if existing:
-        raise HTTPException(status_code=400, detail="Podcast already exists")
+        raise HTTPException(status_code=400, detail="Podcast already exists in your library")
     
     podcast = crud.create_podcast(db, {
         "title": feed_data["title"],
