@@ -95,7 +95,6 @@ export const api = {
       method: 'POST',
       headers: { ...getAuthHeaders() }
     });
-    });
     if (!res.ok) throw new Error('Failed to refresh all podcasts');
     return res.json();
   },
