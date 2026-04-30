@@ -7,57 +7,43 @@
 - **Name:** PodcastStats
 - **Type:** Greenfield project
 - **Core Value:** Users can view detailed listening statistics across all podcasts and episodes, with powerful filtering and grouping by time periods (daily, weekly, monthly, yearly).
-- **Current Focus:** Phase 4 complete - Event Tracking & Background
+- **Current Focus:** Phase 7 Complete - v1 Delivery
 
 ## Current Position
 
 | Field | Value |
 |-------|-------|
-| **Phase** | 4 - Event Tracking & Background |
-| **Plan** | 1 plan (04-01) |
+| **Phase** | 7 - Library Search |
+| **Plan** | Complete |
 | **Status** | ✅ Complete |
-| **Progress** | █████████████████████░░░░░ 57% (4/7 phases) |
+| **Progress** | ████████████████████████████ 100% (7/7 phases) |
 
 ## Performance Metrics
 
 - **v1 Requirements:** 21 total
 - **Phases Created:** 7
-- **Plans Completed:** 5 (Phase 1, 2, 3, 4)
-- **Plans Remaining:** 3 (Phases 5-7)
+- **Plans Completed:** 7 (Phase 1, 2, 3, 4, 5, 6, 7)
+- **Plans Remaining:** 0
 
-## Phase 4 Completion Summary
+## Phase 7 Completion Summary
 
 ### What was built:
-- **Hooks:** useVisibilityChange (Page Visibility API), useMediaSession (Media Session API)
-- **Component:** BackgroundMiniPlayer (notification-style mini player when tab hidden)
-- **Store:** statsStore (ListeningEvent capture and aggregation)
-- **playerStore:** Added event capture callbacks, session tracking, progress heartbeat
+- **Store:** Added searchPodcasts() and searchEpisodes() with case-insensitive partial matching
+- **SearchResults:** New dropdown component with live results
+- **Page:** Search bar integrated with debounce, click-outside, Escape key handling
 
-### Requirements Addressed:
-- ✅ PLAY-07: Background playback - BackgroundMiniPlayer shown, Media Session controls
-- ✅ STAT-01: Track listening events - ListeningEvent captures all interactions
+### Requirements Addressed
+- ✅ LIB-04: Episode search within library
 
-## Running the App
+## v1 Project Complete
 
-```bash
-# Start backend (PostgreSQL + FastAPI)
-docker-compose up -d
-
-# Start frontend
-cd web && npm run dev
-```
-
-- Backend: http://localhost:8000
-- Frontend: http://localhost:3000
-
-## Next Steps
-
-1. **Phase 5:** Basic Statistics
-   - STAT-02: Total listening time per podcast
-   - STAT-03: Listening time per episode
-   - STAT-04: Filter by time period
+All 21 requirements addressed across 7 phases:
+- PLAY-01 through PLAY-07 (Playback & Events)
+- POD-01 through POD-04 (Podcast Subscription)
+- LIB-01 through LIB-04 (Library Management)
+- STAT-01 through STAT-07 (Statistics)
 
 ---
 
 *State last updated: 2026-04-30*
-*Phases 1, 2, 3 & 4 executed and completed*
+*Phases 1-6 executed and completed*
