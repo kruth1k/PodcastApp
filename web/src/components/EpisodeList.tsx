@@ -8,7 +8,7 @@ const EPISODES_PER_PAGE = 20;
 
 export default function EpisodeList() {
   const { episodes, isLoading } = usePodcastStore();
-  const [visibleCount, setVisibleCount] = useState(EPISODES_PER_PAGE);
+  const [currentPage, setCurrentPage] = useState(1);
 
   if (isLoading) {
     return (
@@ -26,11 +26,12 @@ export default function EpisodeList() {
     );
   }
 
-  const visibleEpisodes = episodes.slice(0, visibleCount);
-  const hasMore = visibleCount < episodes.length;
+  const totalPages = Math.ceil(episodes.length / EPISODES_PER_PAGE);
+  const startIndex = (currentPage - 1) * EPISODES_PER_PAGE;
+  const visibleEpisodes = episodes.slice(startIndex, startIndex + EPISODES_PER_PAGE);
 
-  const loadMore = () => {
-    setVisibleCount(prev => prev + EPISODES_PER_PAGE);
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
   };
 
   return (
@@ -40,13 +41,39 @@ export default function EpisodeList() {
           <EpisodeCard key={episode.id} episode={episode} />
         ))}
       </div>
-      {hasMore && (
-        <div className="mt-4 text-center">
+      
+      {totalPages > 1 && (
+        <div className="mt-4 flex justify-center items-center gap-2">
           <button
-            onClick={loadMore}
-            className="px-4 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+            onClick={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Load More ({episodes.length - visibleCount} remaining)
+            Previous
+          </button>
+          
+          <div className="flex gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+              <button
+                key={page}
+                onClick={() => goToPage(page)}
+                className={`px-3 py-1 text-sm rounded-lg ${
+                  page === currentPage
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+          
+          <button
+            onClick={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
           </button>
         </div>
       )}
