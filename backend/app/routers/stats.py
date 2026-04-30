@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
 import uuid
@@ -15,7 +15,8 @@ def get_db():
     finally:
         db.close()
 
-def get_current_user_id(authorization: str = None) -> str:
+def get_current_user_id(request: Request) -> str:
+    authorization = request.headers.get("Authorization")
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -36,10 +37,10 @@ def get_current_user_id(authorization: str = None) -> str:
 @router.post("/events", response_model=schemas.ListeningEventResponse)
 def add_listening_event(
     event: schemas.ListeningEventCreate,
-    authorization: str = Depends(get_current_user_id),
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    user_id = get_current_user_id(authorization)
+    user_id = get_current_user_id(request)
     
     listening_event = models.ListeningEvent(
         id=str(uuid.uuid4()),
@@ -60,10 +61,10 @@ def add_listening_event(
 
 @router.get("/events", response_model=List[schemas.ListeningEventResponse])
 def get_listening_events(
-    authorization: str = Depends(get_current_user_id),
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    user_id = get_current_user_id(authorization)
+    user_id = get_current_user_id(request)
     events = db.query(models.ListeningEvent).filter(
         models.ListeningEvent.user_id == user_id
     ).order_by(models.ListeningEvent.timestamp.desc()).limit(1000).all()
@@ -73,10 +74,10 @@ def get_listening_events(
 def update_playback_position(
     episode_id: str,
     position: schemas.PlaybackPositionUpdate,
-    authorization: str = Depends(get_current_user_id),
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    user_id = get_current_user_id(authorization)
+    user_id = get_current_user_id(request)
     
     existing = db.query(models.PlaybackPosition).filter(
         models.PlaybackPosition.user_id == user_id,
@@ -105,10 +106,10 @@ def update_playback_position(
 @router.get("/position/{episode_id}", response_model=schemas.PlaybackPositionResponse)
 def get_playback_position(
     episode_id: str,
-    authorization: str = Depends(get_current_user_id),
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    user_id = get_current_user_id(authorization)
+    user_id = get_current_user_id(request)
     
     position = db.query(models.PlaybackPosition).filter(
         models.PlaybackPosition.user_id == user_id,
@@ -125,10 +126,10 @@ def get_playback_position(
 
 @router.get("/sync", response_model=dict)
 def get_all_data(
-    authorization: str = Depends(get_current_user_id),
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    user_id = get_current_user_id(authorization)
+    user_id = get_current_user_id(request)
     
     podcasts = db.query(models.Podcast).filter(models.Podcast.user_id == user_id).all()
     events = db.query(models.ListeningEvent).filter(
@@ -170,10 +171,10 @@ def get_all_data(
 @router.post("/sync")
 def sync_data(
     data: dict,
-    authorization: str = Depends(get_current_user_id),
+    request: Request,
     db: Session = Depends(get_db)
 ):
-    user_id = get_current_user_id(authorization)
+    user_id = get_current_user_id(request)
     
     if "podcasts" in data:
         for podcast_data in data["podcasts"]:
