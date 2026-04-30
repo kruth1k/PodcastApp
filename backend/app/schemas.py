@@ -2,6 +2,62 @@ from datetime import datetime
 from typing import Optional, List
 from pydantic import BaseModel
 
+class UserCreate(BaseModel):
+    email: str
+    password: str
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class Token(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+class TokenRefresh(BaseModel):
+    refresh_token: str
+
+class ListeningEventCreate(BaseModel):
+    episode_id: str
+    podcast_id: str
+    event_type: str
+    position_seconds: int = 0
+    playback_rate: float = 1.0
+    session_id: str
+
+class ListeningEventResponse(BaseModel):
+    id: str
+    user_id: str
+    episode_id: str
+    podcast_id: str
+    event_type: str
+    timestamp: datetime
+    position_seconds: int
+    playback_rate: float
+    session_id: str
+    
+    class Config:
+        from_attributes = True
+
+class PlaybackPositionUpdate(BaseModel):
+    episode_id: str
+    position_seconds: int
+
+class PlaybackPositionResponse(BaseModel):
+    id: str
+    user_id: str
+    episode_id: str
+    position_seconds: int
+    updated_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 class PodcastCreate(BaseModel):
     feed_url: str
 

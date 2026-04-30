@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routers import podcasts, episodes
+from app.routers import auth, stats
 
 app = FastAPI(title="PodcastStats API", version="1.0.0")
 
@@ -14,6 +15,8 @@ app.add_middleware(
 
 app.include_router(podcasts.router, prefix="/api/podcasts", tags=["podcasts"])
 app.include_router(episodes.router, prefix="/api/episodes", tags=["episodes"])
+app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(stats.router, prefix="/api/stats", tags=["stats"])
 
 @app.get("/")
 def root():

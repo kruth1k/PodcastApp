@@ -3,10 +3,13 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePodcastStore } from '@/stores/podcastStore';
+import { useAuthStore } from '@/stores/authStore';
 import { api } from '@/lib/api';
 import PodcastList from '@/components/PodcastList';
 import EpisodeList from '@/components/EpisodeList';
 import SearchResults from '@/components/SearchResults';
+import LoginForm from '@/components/LoginForm';
+import RegisterForm from '@/components/RegisterForm';
 
 export default function Home() {
   const [feedUrl, setFeedUrl] = useState('');
@@ -14,12 +17,21 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [showLogin, setShowLogin] = useState(true);
   const searchRef = useRef<HTMLDivElement>(null);
+  
   const { selectedPodcast, selectPodcast, addPodcast, fetchPodcasts, isLoading, error, searchEpisodes, searchPodcasts, podcasts } = usePodcastStore();
+  const { isAuthenticated, checkAuth } = useAuthStore();
 
   useEffect(() => {
-    fetchPodcasts();
+    checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchPodcasts();
+    }
+  }, [isAuthenticated]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -121,6 +133,14 @@ export default function Home() {
       setSearchQuery('');
     }
   };
+
+  if (!isAuthenticated) {
+    return showLogin ? (
+      <LoginForm onSwitchToRegister={() => setShowLogin(false)} />
+    ) : (
+      <RegisterForm onSwitchToLogin={() => setShowLogin(true)} />
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
