@@ -21,7 +21,7 @@ export default function Home() {
   const searchRef = useRef<HTMLDivElement>(null);
   
   const { selectedPodcast, selectPodcast, addPodcast, fetchPodcasts, isLoading, error, searchEpisodes, searchPodcasts, podcasts } = usePodcastStore();
-  const { isAuthenticated, checkAuth } = useAuthStore();
+  const { isAuthenticated, checkAuth, logout, user } = useAuthStore();
 
   useEffect(() => {
     checkAuth();
@@ -134,6 +134,11 @@ export default function Home() {
     }
   };
 
+  const handleLogout = async () => {
+    await logout();
+    window.location.reload();
+  };
+
   if (!isAuthenticated) {
     return showLogin ? (
       <LoginForm onSwitchToRegister={() => setShowLogin(false)} />
@@ -150,6 +155,9 @@ export default function Home() {
           <p className="text-gray-500 mt-1">Track your podcast listening statistics</p>
         </div>
         <div className="flex items-center gap-4">
+          {user && (
+            <span className="text-sm text-gray-600">{user.email}</span>
+          )}
           <Link
             href="/stats"
             className="px-4 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
@@ -177,6 +185,12 @@ export default function Home() {
               Refresh All
             </>
           )}
+        </button>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
+        >
+          Logout
         </button>
         </div>
       </header>
