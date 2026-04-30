@@ -1,19 +1,37 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
 from typing import List
 import uuid
 from app import database, crud, schemas, models
 from app.services.rss_parser import parse_feed
+from app.auth import verify_token
 
-router = APIRouter()
+router = APIRouter(tags=["podcasts"])
+
+def get_current_user_id(request: Request, db: Session = Depends(database.get_db)) -> str:
+    """Get current user ID from token, or return None for guest mode"""
+    auth_header = request.headers.get("Authorization")
+    if not auth_header or not auth_header.startswith("Bearer "):
+        return None
+    
+    token = auth_header.replace("Bearer ", "")
+    payload = verify_token(token)
+    
+    if not payload or payload.get("type") != "access":
+        return None
+    
+    return payload.get("sub")
 
 @router.get("", response_model=List[schemas.PodcastResponse])
-def get_podcasts(db: Session = Depends(database.get_db)):
-    podcasts = crud.get_podcasts(db)
+def get_podcasts(request: Request, db: Session = Depends(database.get_db)):
+    user_id = get_current_user_id(request, db)
+    podcasts = crud.get_podcasts_for_user(db, user_id)
     return podcasts
 
 @router.post("", response_model=schemas.PodcastResponse, status_code=status.HTTP_201_CREATED)
-def add_podcast(podcast_data: schemas.PodcastCreate, db: Session = Depends(database.get_db)):
+def add_podcast(podcast_data: schemas.PodcastCreate, request: Request, db: Session = Depends(database.get_db)):
+    user_id = get_current_user_id(request, db)
+    
     try:
         feed_data = parse_feed(podcast_data.feed_url)
     except Exception as e:
@@ -28,7 +46,8 @@ def add_podcast(podcast_data: schemas.PodcastCreate, db: Session = Depends(datab
         "description": feed_data.get("description"),
         "feed_url": podcast_data.feed_url,
         "image_url": feed_data.get("image_url"),
-        "author": feed_data.get("author")
+        "author": feed_data.get("author"),
+        "user_id": user_id
     })
     
     if feed_data.get("episodes"):

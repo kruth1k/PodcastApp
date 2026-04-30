@@ -11,7 +11,8 @@ def create_podcast(db: Session, podcast_data: dict) -> models.Podcast:
         description=podcast_data.get("description"),
         feed_url=podcast_data["feed_url"],
         image_url=podcast_data.get("image_url"),
-        author=podcast_data.get("author")
+        author=podcast_data.get("author"),
+        user_id=podcast_data.get("user_id")
     )
     db.add(podcast)
     db.commit()
@@ -20,6 +21,16 @@ def create_podcast(db: Session, podcast_data: dict) -> models.Podcast:
 
 def get_podcasts(db: Session) -> List[models.Podcast]:
     return db.query(models.Podcast).options(joinedload(models.Podcast.episodes)).order_by(models.Podcast.created_at.desc()).all()
+
+def get_podcasts_for_user(db: Session, user_id: Optional[str] = None) -> List[models.Podcast]:
+    if user_id:
+        return db.query(models.Podcast).filter(
+            models.Podcast.user_id == user_id
+        ).options(joinedload(models.Podcast.episodes)).order_by(models.Podcast.created_at.desc()).all()
+    else:
+        return db.query(models.Podcast).filter(
+            models.Podcast.user_id == None
+        ).options(joinedload(models.Podcast.episodes)).order_by(models.Podcast.created_at.desc()).all()
 
 def get_podcast(db: Session, podcast_id: str) -> Optional[models.Podcast]:
     return db.query(models.Podcast).filter(models.Podcast.id == podcast_id).first()
