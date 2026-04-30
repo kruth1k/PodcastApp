@@ -1,19 +1,49 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { usePodcastStore } from '@/stores/podcastStore';
 import { api } from '@/lib/api';
 import PodcastList from '@/components/PodcastList';
 import EpisodeList from '@/components/EpisodeList';
+import SearchResults from '@/components/SearchResults';
 
 export default function Home() {
   const [feedUrl, setFeedUrl] = useState('');
   const [refreshingAll, setRefreshingAll] = useState(false);
-  const { selectedPodcast, selectPodcast, addPodcast, fetchPodcasts, isLoading, error } = usePodcastStore();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const { selectedPodcast, selectPodcast, addPodcast, fetchPodcasts, isLoading, error, searchEpisodes, podcasts } = usePodcastStore();
 
   useEffect(() => {
     fetchPodcasts();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (searchQuery.trim().length < 2) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const results = searchEpisodes(searchQuery);
+      setSearchResults(results);
+      setShowResults(true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchEpisodes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,6 +64,22 @@ export default function Home() {
     }
   };
 
+  const handleSearchSelect = (podcastId: string, episodeId: string) => {
+    const podcast = podcasts.find((p) => p.id === podcastId);
+    if (podcast) {
+      selectPodcast(podcast);
+      setShowResults(false);
+      setSearchQuery('');
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowResults(false);
+      setSearchQuery('');
+    }
+  };
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       <header className="mb-8 flex justify-between items-start">
@@ -41,8 +87,15 @@ export default function Home() {
           <h1 className="text-3xl font-bold text-gray-900">PodcastStats</h1>
           <p className="text-gray-500 mt-1">Track your podcast listening statistics</p>
         </div>
-        <button
-          onClick={handleRefreshAll}
+        <div className="flex items-center gap-4">
+          <Link
+            href="/stats"
+            className="px-4 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+          >
+            View Stats
+          </Link>
+          <button
+            onClick={handleRefreshAll}
           disabled={refreshingAll}
           className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 disabled:opacity-50 flex items-center gap-2"
         >
@@ -63,7 +116,26 @@ export default function Home() {
             </>
           )}
         </button>
+        </div>
       </header>
+
+      <div className="mb-4" ref={searchRef}>
+        <div className="relative">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Search episodes in your library..."
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <SearchResults
+            results={searchResults}
+            onSelect={handleSearchSelect}
+            isOpen={showResults}
+          />
+        </div>
+      </div>
 
       <div className="mb-8">
         <form onSubmit={handleSubmit} className="flex gap-2">
