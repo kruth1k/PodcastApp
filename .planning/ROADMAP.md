@@ -141,7 +141,9 @@
 3. User can view listening statistics filtered by year with monthly breakdown
 4. User can switch between time periods without losing context
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+- [x] 06-01-PLAN.md — Time-grouped statistics (Chart/Calendar views)
 
 **UI hint:** yes
 
@@ -160,7 +162,9 @@
 2. User can click a search result and go directly to that episode
 3. Search works across all subscribed podcasts simultaneously
 
-**Plans:** TBD
+**Plans:** 1 plan
+
+- [x] 07-01-PLAN.md — Library search (podcastStore, SearchResults, home page)
 
 **UI hint:** yes
 
@@ -174,9 +178,9 @@
 | 2. Foundation & Playback | 1/1 | ✅ Completed | 2026-04-30 |
 | 3. Feed Management & Progress | 1/1 | ✅ Completed | 2026-04-30 |
 | 4. Event Tracking & Background | 1/1 | ✅ Completed | 2026-04-30 |
-| 5. Basic Statistics | 0/1 | Not started | - |
-| 6. Time-Grouped Statistics | 0/1 | Not started | - |
-| 7. Library Search | 0/1 | Not started | - |
+| 5. Basic Statistics | 1/1 | ✅ Completed | 2026-04-30 |
+| 6. Time-Grouped Statistics | 1/1 | ✅ Completed | 2026-04-30 |
+| 7. Library Search | 1/1 | 🔄 Ready | - |
 
 ---
 
