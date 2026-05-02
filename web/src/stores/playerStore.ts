@@ -361,6 +361,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const state = get();
     const { howlInstance, isPlaying, currentEpisode, position, currentSessionId, pauseTimestamp } = state;
     
+    // Handle desync: if isPlaying is true but no howlInstance, audio might be orphaned from navigation
+    // Reset to a clean state
+    if (isPlaying && !howlInstance) {
+      set({ isPlaying: false, position: 0 });
+      return;
+    }
+    
     // If no audio instance but episode exists, start playing
     if (!howlInstance && currentEpisode) {
       get().playEpisode(currentEpisode);
