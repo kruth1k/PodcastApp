@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { WeeklyStats, MonthlyStats, YearlyStats, TimeGroup } from '@/stores/statsStore';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 function getISOWeek(date: Date): string {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
@@ -30,7 +31,6 @@ function formatTime(seconds: number): string {
 
 function getLabel(period: string, groupBy: TimeGroup): string {
   if (groupBy === 'week') {
-    // period is YYYY-MM-DD, show day name
     const date = new Date(period);
     return date.toLocaleDateString('en-US', { weekday: 'short' });
   }
@@ -51,7 +51,6 @@ function generatePeriods(groupBy: TimeGroup, baseDate: Date): string[] {
   const periods: string[] = [];
   
   if (groupBy === 'week') {
-    // Show 7 days of the current week
     const startOfWeek = new Date(baseDate);
     startOfWeek.setDate(baseDate.getDate() - baseDate.getDay());
     for (let i = 0; i < 7; i++) {
@@ -106,7 +105,6 @@ export default function StatsChart({ weeklyData, monthlyData, yearlyData, dailyD
   };
 
   let rawData: { period: string; total_seconds: number }[] = [];
-  let maxValue = 0;
 
   if (groupBy === 'week' && dailyData) {
     rawData = dailyData.map((d: { date: string; total_seconds: number }) => ({ period: d.date, total_seconds: d.total_seconds }));
@@ -123,14 +121,12 @@ export default function StatsChart({ weeklyData, monthlyData, yearlyData, dailyD
     return existing || { period, total_seconds: 0 };
   });
 
-  // Find max value
-  if (data.length > 0) {
-    const maxFromData = Math.max(...data.map((d) => d.total_seconds));
-    // Ensure minimum visibility of 30 seconds
-    maxValue = maxFromData > 0 ? Math.max(maxFromData, 30) : 0;
-  }
+  const chartData = data.map(item => ({
+    name: getLabel(item.period, groupBy),
+    minutes: Math.round(item.total_seconds / 60)
+  }));
 
-if (maxValue === 0) {
+  if (data.every(d => d.total_seconds === 0)) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-center justify-between mb-4">
@@ -150,23 +146,36 @@ if (maxValue === 0) {
         <span className="font-medium">{getLabelText()}</span>
         <button onClick={goForward} className="p-2 hover:bg-gray-100 rounded">&gt;</button>
       </div>
-      <div className="flex items-end gap-1 h-48 border-t border-l border-r border-gray-200 p-1">
-        {data.map((item, index) => {
-          const hasData = item.total_seconds > 0;
-          const percentage = maxValue > 0 ? (item.total_seconds / maxValue) * 100 : 0;
-          return (
-            <div key={index} className="flex-1 flex flex-col items-center group h-full justify-end">
-              {hasData && (
-                <div
-                  className="w-full bg-blue-500 rounded-t transition-all duration-200 hover:bg-blue-600"
-                  style={{ height: `${percentage}%` }}
-                  title={`${item.period}: ${formatTime(item.total_seconds)}`}
-                />
-              )}
-              <span className="text-xs text-gray-500 mt-1 whitespace-nowrap">{getLabel(item.period, groupBy)}</span>
-            </div>
-          );
-        })}
+      <div className="h-64">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <XAxis 
+              dataKey="name" 
+              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis 
+              tick={{ fontSize: 12 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => `${value}m`}
+            />
+            <Tooltip 
+              formatter={(value: number) => [formatTime(value), 'Time']}
+              contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
+            />
+            <Line 
+              type="monotone" 
+              dataKey="minutes" 
+              stroke="#3b82f6" 
+              strokeWidth={2}
+              dot={{ fill: '#3b82f6', strokeWidth: 2 }}
+              activeDot={{ r: 6 }}
+              name="Minutes"
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );

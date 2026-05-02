@@ -35,6 +35,7 @@ export default function StatsPage() {
   const getWeeklyStats = useStatsStore((state) => state.getWeeklyStats);
   const getMonthlyStats = useStatsStore((state) => state.getMonthlyStats);
   const getYearlyStats = useStatsStore((state) => state.getYearlyStats);
+  const getTimeSaved = useStatsStore((state) => state.getTimeSaved);
   const dailyStats = useStatsStore((state) => state.dailyStats);
   const aggregateDailyStats = useStatsStore((state) => state.aggregateDailyStats);
   const events = useStatsStore((state) => state.events);
@@ -74,6 +75,7 @@ export default function StatsPage() {
   }, []);
 
   const totalTime = getTotalListeningTime(period);
+  const timeSaved = getTimeSaved();
   const podcastStats = getPodcastStats(period);
   const episodeStats = getEpisodeStats(period);
   const weeklyStats = getWeeklyStats(12);
@@ -195,6 +197,14 @@ const getEpisodeTitle = (episodeId: string) => {
             <h2 className="text-lg font-semibold text-gray-700 mb-2">Total Listening Time</h2>
             <p className="text-4xl font-bold text-blue-600">{formatTime(totalTime)}</p>
           </div>
+
+          {timeSaved > 0 && (
+            <div className="bg-white rounded-lg shadow p-6 mb-8">
+              <h2 className="text-lg font-semibold text-gray-700 mb-2">Time Saved</h2>
+              <p className="text-4xl font-bold text-green-600">{formatTime(timeSaved)}</p>
+              <p className="text-gray-500 text-sm mt-1">By listening at faster speeds</p>
+            </div>
+          )}
 
           <div className="bg-white rounded-lg shadow p-6 mb-8">
             <h2 className="text-lg font-semibold text-gray-700 mb-4">Top Podcasts</h2>

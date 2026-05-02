@@ -255,6 +255,7 @@ interface StatsState {
   getWeeklyStats: (limit?: number) => WeeklyStats[];
   getMonthlyStats: (limit?: number) => MonthlyStats[];
   getYearlyStats: (limit?: number) => YearlyStats[];
+  getTimeSaved: () => number;
   captureEvent: (
     event_type: ListeningEvent['event_type'],
     position: number,
@@ -512,5 +513,28 @@ export const useStatsStore = create<StatsState>((set, get) => ({
   getYearlyStats: (limit: number = 5) => {
     const { yearlyStats } = get();
     return yearlyStats.slice(0, limit);
+  },
+  getTimeSaved: () => {
+    const { events } = get();
+    let timeSaved = 0;
+    const sortedEvents = [...events].sort((a, b) => a.timestamp - b.timestamp);
+    
+    for (let i = 1; i < sortedEvents.length; i++) {
+      const prevEvent = sortedEvents[i - 1];
+      const currEvent = sortedEvents[i];
+      
+      if (prevEvent.event_type !== 'pause' && currEvent.event_type !== 'play') {
+        const contentTime = currEvent.position_seconds - prevEvent.position_seconds;
+        const wallClockTime = (currEvent.timestamp - prevEvent.timestamp) / 1000;
+        
+        if (contentTime > 0 && wallClockTime > 0) {
+          const saved = contentTime - wallClockTime;
+          if (saved > 0) {
+            timeSaved += saved;
+          }
+        }
+      }
+    }
+    return Math.round(timeSaved);
   },
 }));
