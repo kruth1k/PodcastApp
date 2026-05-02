@@ -357,20 +357,35 @@ export const useStatsStore = create<StatsState>((set, get) => ({
     // Sort events by timestamp for time calculation
     const sortedEvents = [...events].sort((a, b) => a.timestamp - b.timestamp);
     
-// Calculate actual listening time from play→pause intervals
-    const sessionsByPodcast = new Map<string, { startTime?: number; podcast_id: string }>();
+// Calculate actual listening time from play→pause intervals, accounting for seeks
+    const sessionsByPodcast = new Map<string, { 
+      startTime?: number; 
+      startPosition?: number; 
+      podcast_id: string;
+      skippedForward: number;
+    }>();
     
     for (const event of sortedEvents) {
-      if (event.event_type !== 'play' && event.event_type !== 'pause') continue;
-      
       const key = `${event.session_id}_${event.podcast_id}`;
-      const session = sessionsByPodcast.get(key) || { podcast_id: event.podcast_id };
+      const session = sessionsByPodcast.get(key) || { 
+        podcast_id: event.podcast_id,
+        startTime: undefined,
+        startPosition: undefined,
+        skippedForward: 0
+      };
       
       if (event.event_type === 'play') {
         session.startTime = event.timestamp;
-      } else if (event.event_type === 'pause' && session.startTime) {
-        const listenTime = (event.timestamp - session.startTime) / 1000;
-        if (listenTime > 0 && listenTime < 3600) { // sanity check: max 1 hour per interval
+        session.startPosition = event.position_seconds;
+        session.skippedForward = 0;
+      } else if (event.event_type === 'seek_forward' || event.event_type === 'seek_back') {
+        if (session.startPosition !== undefined && event.position_seconds > session.startPosition) {
+          session.skippedForward += (event.position_seconds - session.startPosition);
+        }
+        session.startPosition = event.position_seconds;
+      } else if ((event.event_type === 'pause' || event.event_type === 'complete') && session.startTime && session.startPosition !== undefined) {
+        const contentListened = (event.position_seconds - session.startPosition) - session.skippedForward;
+        if (contentListened > 0 && contentListened < 3600) {
           const date = new Date(event.timestamp).toISOString().split('T')[0];
           const dateKey = `${date}_${event.podcast_id}`;
           const existing = byDateAndPodcast.get(dateKey) || {
@@ -379,10 +394,12 @@ export const useStatsStore = create<StatsState>((set, get) => ({
             total_seconds: 0,
             session_count: 0,
           };
-          existing.total_seconds += listenTime;
+          existing.total_seconds += contentListened;
           byDateAndPodcast.set(dateKey, existing);
         }
-        session.startTime = undefined; // reset for next play
+        session.startTime = undefined;
+        session.startPosition = undefined;
+        session.skippedForward = 0;
       }
       
 sessionsByPodcast.set(key, session);
@@ -563,36 +580,53 @@ sessionsByPodcast.set(key, session);
     const sortedEvents = [...filteredEvents].sort((a, b) => a.timestamp - b.timestamp);
     const byEpisode = new Map<string, EpisodeStats>();
     
-    // Calculate listening time from play→pause intervals
-    const sessionsByEpisode = new Map<string, { startTime?: number; episode_id: string }>();
+    // Calculate listening time from play→pause intervals, accounting for seeks
+    const sessionsByEpisode = new Map<string, { 
+      startTime?: number; 
+      startPosition?: number; 
+      episode_id: string;
+      skippedForward: number;
+    }>();
     
     for (const event of sortedEvents) {
-      if (event.event_type !== 'play' && event.event_type !== 'pause') continue;
-      
       const key = `${event.session_id}_${event.episode_id}`;
-      const session = sessionsByEpisode.get(key) || { episode_id: event.episode_id };
+      const session = sessionsByEpisode.get(key) || { 
+        episode_id: event.episode_id,
+        startTime: undefined,
+        startPosition: undefined,
+        skippedForward: 0
+      };
       
       if (event.event_type === 'play') {
         session.startTime = event.timestamp;
-      } else if (event.event_type === 'pause' && session.startTime) {
-        const listenTime = (event.timestamp - session.startTime) / 1000;
-        if (listenTime > 0 && listenTime < 3600) {
+        session.startPosition = event.position_seconds;
+        session.skippedForward = 0;
+      } else if (event.event_type === 'seek_forward' || event.event_type === 'seek_back') {
+        if (session.startPosition !== undefined && event.position_seconds > session.startPosition) {
+          session.skippedForward += (event.position_seconds - session.startPosition);
+        }
+        session.startPosition = event.position_seconds;
+      } else if ((event.event_type === 'pause' || event.event_type === 'complete') && session.startTime && session.startPosition !== undefined) {
+        const contentListened = (event.position_seconds - session.startPosition) - session.skippedForward;
+        if (contentListened > 0 && contentListened < 3600) {
           const existing = byEpisode.get(event.episode_id) || {
             episode_id: event.episode_id,
             total_seconds: 0,
             session_count: 0,
           };
-          existing.total_seconds += listenTime;
+          existing.total_seconds += contentListened;
           byEpisode.set(event.episode_id, existing);
         }
         session.startTime = undefined;
+        session.startPosition = undefined;
+        session.skippedForward = 0;
       }
       
       sessionsByEpisode.set(key, session);
     }
     
     for (const event of filteredEvents) {
-      if (event.event_type === 'play') {
+      if (event.event_type === 'play' || event.event_type === 'complete') {
         const existing = byEpisode.get(event.episode_id);
         if (existing) {
           existing.session_count += 1;
@@ -613,29 +647,46 @@ sessionsByPodcast.set(key, session);
     const { yearlyStats } = get();
     return yearlyStats.slice(0, limit);
   },
-  getTimeSaved: () => {
+getTimeSaved: () => {
     const { events } = get();
     let timeSaved = 0;
     const sortedEvents = [...events].sort((a, b) => a.timestamp - b.timestamp);
     
-    for (let i = 1; i < sortedEvents.length; i++) {
-      const prev = sortedEvents[i - 1];
-      const curr = sortedEvents[i];
+    // Track sessions to calculate time saved per session
+    const sessions = new Map<string, { 
+      startPosition?: number; 
+      playbackRate: number; 
+      skippedForward: number;
+    }>();
+    
+    for (const event of sortedEvents) {
+      const key = `${event.session_id}_${event.podcast_id}`;
+      const session = sessions.get(key) || { 
+        startPosition: undefined, 
+        playbackRate: 1,
+        skippedForward: 0
+      };
       
-      // Only calculate for consecutive progress events
-      if (prev.event_type !== 'progress' || curr.event_type !== 'progress') continue;
+      if (event.event_type === 'play') {
+        session.startPosition = event.position_seconds;
+        session.playbackRate = event.playback_rate || 1;
+        session.skippedForward = 0;
+      } else if (event.event_type === 'seek_forward' || event.event_type === 'seek_back') {
+        if (session.startPosition !== undefined && event.position_seconds > session.startPosition) {
+          session.skippedForward += (event.position_seconds - session.startPosition);
+        }
+        session.startPosition = event.position_seconds;
+      } else if ((event.event_type === 'pause' || event.event_type === 'complete') && session.startPosition !== undefined) {
+        // Calculate content listened and time saved
+        const contentListened = (event.position_seconds - session.startPosition) - session.skippedForward;
+        if (contentListened > 0 && session.playbackRate > 1) {
+          const wallClockTime = contentListened / session.playbackRate;
+          timeSaved += (contentListened - wallClockTime);
+        }
+        session.startPosition = undefined;
+      }
       
-      const contentTime = curr.position_seconds - prev.position_seconds;
-      if (contentTime <= 0) continue;
-      
-      // Get the playback rate from the event
-      const playbackRate = curr.playback_rate || 1;
-      if (playbackRate <= 1) continue; // No time saved at 1x or below
-      
-      // Time saved = content time - (content time / playback rate)
-      // Example: 30s content at 1.5x = 20s wall clock, so 10s saved
-      const wallClockTime = contentTime / playbackRate;
-      timeSaved += (contentTime - wallClockTime);
+      sessions.set(key, session);
     }
     
     return Math.round(timeSaved);
