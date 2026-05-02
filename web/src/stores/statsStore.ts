@@ -554,17 +554,27 @@ export const useStatsStore = create<StatsState>((set, get) => ({
       const eventDate = new Date(e.timestamp).toISOString().split('T')[0];
       return eventDate >= startDate;
     });
+    const sortedEvents = [...filteredEvents].sort((a, b) => a.timestamp - b.timestamp);
     const byEpisode = new Map<string, EpisodeStats>();
-    for (const event of filteredEvents) {
-      if (event.event_type !== 'progress') continue;
-      const existing = byEpisode.get(event.episode_id) || {
-        episode_id: event.episode_id,
+    
+    for (let i = 1; i < sortedEvents.length; i++) {
+      const prev = sortedEvents[i - 1];
+      const curr = sortedEvents[i];
+      if (prev.event_type !== 'progress' || curr.event_type !== 'progress') continue;
+      if (prev.episode_id !== curr.episode_id) continue;
+      
+      const timeDiff = (curr.timestamp - prev.timestamp) / 1000;
+      if (timeDiff <= 0 || timeDiff > 300) continue;
+      
+      const existing = byEpisode.get(curr.episode_id) || {
+        episode_id: curr.episode_id,
         total_seconds: 0,
         session_count: 0,
       };
-      existing.total_seconds += 30;
-      byEpisode.set(event.episode_id, existing);
+      existing.total_seconds += timeDiff;
+      byEpisode.set(curr.episode_id, existing);
     }
+    
     for (const event of filteredEvents) {
       if (event.event_type === 'play') {
         const existing = byEpisode.get(event.episode_id);
