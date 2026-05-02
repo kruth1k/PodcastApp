@@ -128,16 +128,4 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch last played');
     return res.json();
   },
-
-  savePlaybackPosition: async (episodeId: string, positionSeconds: number): Promise<void> => {
-    const res = await fetch(`${API_URL}/api/stats/position/${episodeId}`, {
-      method: 'PUT',
-      headers: { 
-        'Content-Type': 'application/json',
-        ...getAuthHeaders()
-      },
-      body: JSON.stringify({ episode_id: episodeId, position_seconds: positionSeconds })
-    });
-    if (!res.ok) throw new Error('Failed to save position');
-  },
 };

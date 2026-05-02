@@ -9,7 +9,7 @@ interface PodcastCardProps {
 }
 
 export default function PodcastCard({ podcast }: PodcastCardProps) {
-  const { selectPodcast, removePodcast, fetchEpisodes } = usePodcastStore();
+  const { selectPodcast, removePodcast } = usePodcastStore();
   const [refreshing, setRefreshing] = useState(false);
 
   const handleDelete = async (e: React.MouseEvent) => {
@@ -24,7 +24,6 @@ export default function PodcastCard({ podcast }: PodcastCardProps) {
     setRefreshing(true);
     try {
       await api.refreshPodcast(podcast.id);
-      await fetchEpisodes(podcast.id);
     } catch (error) {
       alert('Failed to refresh podcast');
     } finally {
