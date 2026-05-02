@@ -1,5 +1,18 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+const handleAuthError = async (res: Response): Promise<boolean> => {
+  if (res.status === 401 || res.status === 403) {
+    try {
+      const { logout } = await import('@/stores/authStore');
+      logout();
+      return true;
+    } catch {
+      return true;
+    }
+  }
+  return false;
+};
+
 const getAuthHeaders = (): HeadersInit => {
   if (typeof window === 'undefined') return {};
   
@@ -36,11 +49,84 @@ export interface Episode {
 }
 
 export const api = {
-  getPodcasts: async (): Promise<Podcast[]> => {
+getPodcasts: async (): Promise<Podcast[]> => {
     const res = await fetch(`${API_URL}/api/podcasts`, {
       headers: { ...getAuthHeaders() }
     });
+    if (await handleAuthError(res)) throw new Error('Session expired');
     if (!res.ok) throw new Error('Failed to fetch podcasts');
+    return res.json();
+  },
+
+  getPodcast: async (id: string): Promise<Podcast> => {
+    const res = await fetch(`${API_URL}/api/podcasts/${id}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to fetch podcast');
+    return res.json();
+  },
+
+  addPodcast: async (feedUrl: string): Promise<Podcast> => {
+    const res = await fetch(`${API_URL}/api/podcasts`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ feed_url: feedUrl })
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to add podcast');
+    return res.json();
+  },
+
+  deletePodcast: async (id: string): Promise<void> => {
+    const res = await fetch(`${API_URL}/api/podcasts/${id}`, { 
+      method: 'DELETE',
+      headers: { ...getAuthHeaders() }
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to delete podcast');
+  },
+
+  getEpisodes: async (podcastId: string, offset: number = 0, limit: number = 50): Promise<{ episodes: Episode[], total: number }> => {
+    const res = await fetch(`${API_URL}/api/episodes?podcast_id=${podcastId}&offset=${offset}&limit=${limit}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to fetch episodes');
+    const episodes = await res.json();
+    return { episodes, total: episodes.length };
+  },
+
+  getEpisodesCount: async (podcastId: string): Promise<number> => {
+    const res = await fetch(`${API_URL}/api/episodes/count?podcast_id=${podcastId}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to fetch episodes count');
+    const data = await res.json();
+    return data.count;
+  },
+
+  refreshPodcast: async (podcastId: string): Promise<Podcast> => {
+    const res = await fetch(`${API_URL}/api/podcasts/${podcastId}/refresh`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders() }
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to refresh podcast');
+    return res.json();
+  },
+
+  refreshAllPodcasts: async (): Promise<{ id: string; title: string; new_episodes: number; success: boolean }[]> => {
+    const res = await fetch(`${API_URL}/api/podcasts/refresh-all`, {
+      method: 'POST',
+      headers: { ...getAuthHeaders() }
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to refresh all podcasts');
     return res.json();
   },
 
@@ -125,7 +211,7 @@ export const api = {
     if (res.status === 404 || res.status === 204 || res.status === 200 && res.headers.get('content-length') === '0') {
       return null;
     }
-    if (res.status === 401 || res.status === 403) {
+    if (await handleAuthError(res)) {
       return null;
     }
     if (!res.ok) throw new Error('Failed to fetch last played');

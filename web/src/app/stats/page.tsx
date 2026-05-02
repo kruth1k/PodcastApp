@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useStatsStore, TimePeriod, TimeGroup, WeeklyStats, MonthlyStats, YearlyStats } from '@/stores/statsStore';
 import { usePodcastStore } from '@/stores/podcastStore';
+import { useAuthStore } from '@/stores/authStore';
 import StatsChart from '@/components/StatsChart';
 import StatsCalendar from '@/components/StatsCalendar';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 function formatTime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -50,7 +53,12 @@ export default function StatsPage() {
       
       for (const podcast of podcastList) {
         try {
-          const res = await fetch(`http://localhost:8000/api/podcasts/${podcast.id}`);
+          const res = await fetch(`${API_URL}/api/podcasts/${podcast.id}`);
+          if (res.status === 401 || res.status === 403) {
+            const { logout } = useAuthStore.getState();
+            logout();
+            return;
+          }
           const fullPodcast = await res.json();
           for (const ep of fullPodcast.episodes || []) {
             episodeMap[ep.id] = { id: ep.id, title: ep.title };
