@@ -6,12 +6,6 @@ import EpisodeCard from './EpisodeCard';
 
 const EPISODES_PER_PAGE = 20;
 
-function getInitialSortOrder(): 'newest' | 'oldest' {
-  if (typeof window === 'undefined') return 'newest';
-  const saved = localStorage.getItem('episode_sort_order');
-  return saved === 'oldest' ? 'oldest' : 'newest';
-}
-
 interface EpisodeListProps {
   podcastId: string;
 }
@@ -21,7 +15,16 @@ export default function EpisodeList({ podcastId }: EpisodeListProps) {
   const [totalEpisodes, setTotalEpisodes] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>(getInitialSortOrder);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('episode_sort_order');
+      if (saved === 'newest' || saved === 'oldest') {
+        setSortOrder(saved);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
