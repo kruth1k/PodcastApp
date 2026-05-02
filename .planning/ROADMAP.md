@@ -15,6 +15,7 @@
 - [ ] **Phase 8: Login & Cross-Device Sync** - User accounts with cloud sync
 - [ ] **Phase 9: Loading Indicator, Episode Sorting & Dark Mode** - Loading state, sort options, and theme toggle
 - [ ] **Phase 10: Resume Playback** - Show last played episode in player bar on login
+- [ ] **Phase 11: Fix Hydration Issue** - Fix server/client HTML mismatch errors
 
 ---
 
@@ -232,6 +233,25 @@
 **Plans:** 1 plan
 
 - [x] 10-01-PLAN.md — Resume playback on login
+
+**UI hint:** yes
+
+---
+
+## Phase 11: Fix Hydration Issue
+
+**Goal:** Fix React hydration errors caused by server/client HTML mismatch
+
+**Depends on:** Phase 10
+
+**Success Criteria** (what must be TRUE):
+1. No hydration errors in browser console
+2. Server-rendered HTML matches client HTML
+3. All client-side dynamic content properly handled with useEffect or mounted check
+
+**Plans:** 1 plan
+
+- [ ] 11-01-PLAN.md — Fix hydration issues
 
 **UI hint:** yes
 
