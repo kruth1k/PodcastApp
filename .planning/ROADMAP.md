@@ -14,6 +14,7 @@
 - [ ] **Phase 7: Library Search** - Search episodes within library
 - [ ] **Phase 8: Login & Cross-Device Sync** - User accounts with cloud sync
 - [ ] **Phase 9: Loading Indicator, Episode Sorting & Dark Mode** - Loading state, sort options, and theme toggle
+- [ ] **Phase 10: Resume Playback** - Show last played episode in player bar on login
 
 ---
 
@@ -212,6 +213,25 @@
 **Plans:** 1 plan
 
 - [x] 09-01-PLAN.md — Loading indicator, episode sorting, and dark mode
+
+**UI hint:** yes
+
+---
+
+## Phase 10: Resume Playback
+
+**Goal:** Show last played episode in player bar when user logs in
+
+**Depends on:** Phase 9
+
+**Success Criteria** (what must be TRUE):
+1. User sees the episode they were last listening to in the player bar when they log back in
+2. If it's the user's first login, nothing shows in the player bar
+3. The episode resumes from the last saved position
+
+**Plans:** 1 plan
+
+- [x] 10-01-PLAN.md — Resume playback on login
 
 **UI hint:** yes
 
