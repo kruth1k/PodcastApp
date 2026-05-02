@@ -368,6 +368,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       return;
     }
     
+    // Handle opposite desync: isPlaying is false but howlInstance is actually playing
+    // This can happen after navigation - audio keeps playing but state gets out of sync
+    if (!isPlaying && howlInstance && howlInstance.playing()) {
+      set({ isPlaying: true });
+      return;
+    }
+    
     // If no audio instance but episode exists, start playing
     if (!howlInstance && currentEpisode) {
       get().playEpisode(currentEpisode);

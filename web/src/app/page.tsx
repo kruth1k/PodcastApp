@@ -63,7 +63,13 @@ export default function Home() {
         try {
           const lastPlayed = await api.getLastPlayed();
           if (lastPlayed) {
-            const { setLastPlayed } = usePlayerStore.getState();
+            const playerState = usePlayerStore.getState();
+            const { setLastPlayed, currentEpisode, howlInstance } = playerState;
+            
+            if (howlInstance && currentEpisode?.id === lastPlayed.episode.id) {
+              return;
+            }
+            
             setLastPlayed(
               {
                 id: lastPlayed.episode.id,
