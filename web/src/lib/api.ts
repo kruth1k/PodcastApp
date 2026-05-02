@@ -154,4 +154,78 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch last played');
     return res.json();
   },
+
+  addListeningEvent: async (event: {
+    episode_id: string;
+    podcast_id: string;
+    event_type: string;
+    position_seconds: number;
+    playback_rate: number;
+    session_id: string;
+  }) => {
+    const res = await fetch(`${API_URL}/api/stats/events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify(event)
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to save listening event');
+    return res.json();
+  },
+
+  getListeningEvents: async (): Promise<Array<{
+    id: string;
+    episode_id: string;
+    podcast_id: string;
+    event_type: string;
+    position_seconds: number;
+    playback_rate: number;
+    session_id: string;
+    timestamp: string;
+  }>> => {
+    const res = await fetch(`${API_URL}/api/stats/events`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to fetch listening events');
+    return res.json();
+  },
+
+  syncStats: async (data: {
+    events?: Array<{
+      episode_id: string;
+      podcast_id: string;
+      event_type: string;
+      position_seconds: number;
+      session_id: string;
+    }>;
+    positions?: Array<{
+      episode_id: string;
+      position_seconds: number;
+    }>;
+  }) => {
+    const res = await fetch(`${API_URL}/api/stats/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify(data)
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to sync stats');
+    return res.json();
+  },
+
+  getAllData: async () => {
+    const res = await fetch(`${API_URL}/api/stats/sync`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (await handleAuthError(res)) throw new Error('Session expired');
+    if (!res.ok) throw new Error('Failed to fetch all data');
+    return res.json();
+  },
 };

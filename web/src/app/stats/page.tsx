@@ -38,6 +38,7 @@ export default function StatsPage() {
   const getTimeSaved = useStatsStore((state) => state.getTimeSaved);
   const dailyStats = useStatsStore((state) => state.dailyStats);
   const aggregateDailyStats = useStatsStore((state) => state.aggregateDailyStats);
+  const loadFromBackend = useStatsStore((state) => state.loadFromBackend);
   const events = useStatsStore((state) => state.events);
   const podcasts = usePodcastStore((state) => state.podcasts);
   const fetchPodcasts = usePodcastStore((state) => state.fetchPodcasts);
@@ -45,6 +46,8 @@ export default function StatsPage() {
 
   useEffect(() => {
     const loadData = async () => {
+      // Load stats from backend first (for cross-device sync)
+      await loadFromBackend();
       await fetchPodcasts();
       aggregateDailyStats();
       

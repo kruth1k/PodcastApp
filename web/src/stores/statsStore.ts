@@ -266,6 +266,7 @@ interface StatsState {
   startSession: (episode_id: string, podcast_id: string) => string;
   endSession: () => void;
   aggregateDailyStats: () => void;
+  loadFromBackend: () => Promise<void>;
   getListeningTime: (podcast_id: string, startDate: string, endDate: string) => number;
   getSessionCount: (podcast_id: string, startDate: string, endDate: string) => number;
 }
@@ -427,6 +428,64 @@ export const useStatsStore = create<StatsState>((set, get) => ({
     saveYearlyStats(newYearlyStats);
     
     set({ dailyStats: newDailyStats, weeklyStats: newWeeklyStats, monthlyStats: newMonthlyStats, yearlyStats: newYearlyStats, events });
+  },
+  loadFromBackend: async () => {
+    if (typeof window === 'undefined') return;
+    
+    const authData = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+    const token = authData?.state?.accessToken;
+    if (!token) return;
+    
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/stats/events`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+      if (!res.ok) return;
+      
+      const backendEvents: Array<{
+        id: string;
+        episode_id: string;
+        podcast_id: string;
+        event_type: string;
+        position_seconds: number;
+        playback_rate: number;
+        session_id: string;
+        timestamp: string;
+      }> = await res.json();
+      
+      // Get local events
+      const localEvents = loadEvents();
+      const localEventIds = new Set(localEvents.map(e => e.id));
+      
+      // Merge: add backend events that don't exist locally
+      const mergedEvents = [...localEvents];
+      for (const event of backendEvents) {
+        if (!localEventIds.has(event.id)) {
+          mergedEvents.push({
+            id: event.id,
+            episode_id: event.episode_id,
+            podcast_id: event.podcast_id,
+            event_type: event.event_type as ListeningEvent['event_type'],
+            timestamp: new Date(event.timestamp).getTime(),
+            position_seconds: event.position_seconds,
+            playback_rate: event.playback_rate,
+            session_id: event.session_id,
+          });
+        }
+      }
+      
+      // Save merged events and re-aggregate
+      saveEvents(mergedEvents);
+      set({ events: mergedEvents });
+      
+      // Re-aggregate stats
+      get().aggregateDailyStats();
+    } catch (e) {
+      console.error('Failed to load stats from backend:', e);
+    }
   },
   getListeningTime: (podcast_id: string, startDate: string, endDate: string) => {
     const { dailyStats } = get();

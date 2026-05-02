@@ -4,6 +4,34 @@ import { persist } from 'zustand/middleware';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': 'true' };
 
+// Sync local stats events to backend
+async function syncLocalStats(token: string) {
+  try {
+    const events = JSON.parse(localStorage.getItem('podcast_stats_events') || '[]');
+    if (events.length === 0) return;
+    
+    const eventsToSync = events.map((e: any) => ({
+      episode_id: e.episode_id,
+      podcast_id: e.podcast_id,
+      event_type: e.event_type,
+      position_seconds: e.position_seconds,
+      session_id: e.session_id,
+    }));
+    
+    await fetch(`${API_URL}/api/stats/sync`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...NGROK_SKIP_HEADER
+      },
+      body: JSON.stringify({ events: eventsToSync })
+    });
+  } catch (e) {
+    console.error('Failed to sync local stats:', e);
+  }
+}
+
 interface User {
   id: string;
   email: string;
@@ -53,6 +81,9 @@ export const useAuthStore = create<AuthState>()(
         if (userRes.ok) {
           const userData = await userRes.json();
           set({ user: userData, isAuthenticated: true });
+          
+          // Sync local stats to backend
+          syncLocalStats(data.access_token);
         }
       },
 
@@ -78,6 +109,9 @@ export const useAuthStore = create<AuthState>()(
         if (userRes.ok) {
           const userData = await userRes.json();
           set({ user: userData, isAuthenticated: true });
+          
+          // Sync local stats to backend
+          syncLocalStats(data.access_token);
         }
       },
 

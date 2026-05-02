@@ -242,6 +242,28 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       // Limit to last 10,000 to prevent localStorage bloat
       localStorage.setItem('podcast_stats_events', JSON.stringify(events.slice(-10000)));
       
+      // Send to backend for cross-device sync
+      const authData = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+      const token = authData?.state?.accessToken;
+      if (token) {
+        fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/stats/events`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+            ...NGROK_SKIP_HEADER
+          },
+          body: JSON.stringify({
+            episode_id: currentEpisode.id,
+            podcast_id: currentEpisode.podcast_id || '',
+            event_type,
+            position_seconds: Math.floor(position),
+            playback_rate: get().playbackRate,
+            session_id: currentSessionId,
+          })
+        }).catch(console.error);
+      }
+      
       // Trigger daily stats aggregation
       try {
         const statsStore = require('@/stores/statsStore').useStatsStore.getState();
