@@ -357,29 +357,35 @@ export const useStatsStore = create<StatsState>((set, get) => ({
     // Sort events by timestamp for time calculation
     const sortedEvents = [...events].sort((a, b) => a.timestamp - b.timestamp);
     
-    // Calculate actual listening time from wall-clock time between consecutive progress events
-    for (let i = 1; i < sortedEvents.length; i++) {
-      const prev = sortedEvents[i - 1];
-      const curr = sortedEvents[i];
+// Calculate actual listening time from play→pause intervals
+    const sessionsByPodcast = new Map<string, { startTime?: number; podcast_id: string }>();
+    
+    for (const event of sortedEvents) {
+      if (event.event_type !== 'play' && event.event_type !== 'pause') continue;
       
-      // Only count if both are progress events
-      if (prev.event_type !== 'progress' || curr.event_type !== 'progress') continue;
-      if (prev.podcast_id !== curr.podcast_id) continue;
+      const key = `${event.session_id}_${event.podcast_id}`;
+      const session = sessionsByPodcast.get(key) || { podcast_id: event.podcast_id };
       
-      const timeDiff = (curr.timestamp - prev.timestamp) / 1000; // ms to seconds
-      // Ignore gaps > 5 minutes (probably app was closed)
-      if (timeDiff <= 0 || timeDiff > 300) continue;
+      if (event.event_type === 'play') {
+        session.startTime = event.timestamp;
+      } else if (event.event_type === 'pause' && session.startTime) {
+        const listenTime = (event.timestamp - session.startTime) / 1000;
+        if (listenTime > 0 && listenTime < 3600) { // sanity check: max 1 hour per interval
+          const date = new Date(event.timestamp).toISOString().split('T')[0];
+          const dateKey = `${date}_${event.podcast_id}`;
+          const existing = byDateAndPodcast.get(dateKey) || {
+            date,
+            podcast_id: event.podcast_id,
+            total_seconds: 0,
+            session_count: 0,
+          };
+          existing.total_seconds += listenTime;
+          byDateAndPodcast.set(dateKey, existing);
+        }
+        session.startTime = undefined; // reset for next play
+      }
       
-      const date = new Date(curr.timestamp).toISOString().split('T')[0];
-      const key = `${date}_${curr.podcast_id}`;
-      const existing = byDateAndPodcast.get(key) || {
-        date,
-        podcast_id: curr.podcast_id,
-        total_seconds: 0,
-        session_count: 0,
-      };
-      existing.total_seconds += timeDiff;
-      byDateAndPodcast.set(key, existing);
+sessionsByPodcast.set(key, session);
     }
     
     // Count unique sessions
@@ -557,22 +563,32 @@ export const useStatsStore = create<StatsState>((set, get) => ({
     const sortedEvents = [...filteredEvents].sort((a, b) => a.timestamp - b.timestamp);
     const byEpisode = new Map<string, EpisodeStats>();
     
-    for (let i = 1; i < sortedEvents.length; i++) {
-      const prev = sortedEvents[i - 1];
-      const curr = sortedEvents[i];
-      if (prev.event_type !== 'progress' || curr.event_type !== 'progress') continue;
-      if (prev.episode_id !== curr.episode_id) continue;
+    // Calculate listening time from play→pause intervals
+    const sessionsByEpisode = new Map<string, { startTime?: number; episode_id: string }>();
+    
+    for (const event of sortedEvents) {
+      if (event.event_type !== 'play' && event.event_type !== 'pause') continue;
       
-      const timeDiff = (curr.timestamp - prev.timestamp) / 1000;
-      if (timeDiff <= 0 || timeDiff > 300) continue;
+      const key = `${event.session_id}_${event.episode_id}`;
+      const session = sessionsByEpisode.get(key) || { episode_id: event.episode_id };
       
-      const existing = byEpisode.get(curr.episode_id) || {
-        episode_id: curr.episode_id,
-        total_seconds: 0,
-        session_count: 0,
-      };
-      existing.total_seconds += timeDiff;
-      byEpisode.set(curr.episode_id, existing);
+      if (event.event_type === 'play') {
+        session.startTime = event.timestamp;
+      } else if (event.event_type === 'pause' && session.startTime) {
+        const listenTime = (event.timestamp - session.startTime) / 1000;
+        if (listenTime > 0 && listenTime < 3600) {
+          const existing = byEpisode.get(event.episode_id) || {
+            episode_id: event.episode_id,
+            total_seconds: 0,
+            session_count: 0,
+          };
+          existing.total_seconds += listenTime;
+          byEpisode.set(event.episode_id, existing);
+        }
+        session.startTime = undefined;
+      }
+      
+      sessionsByEpisode.set(key, session);
     }
     
     for (const event of filteredEvents) {
