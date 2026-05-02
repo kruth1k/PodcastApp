@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': 'true' };
+
 const handleAuthError = async (res: Response): Promise<boolean> => {
   if (res.status === 401 || res.status === 403) {
     try {
@@ -19,9 +21,9 @@ const getAuthHeaders = (): HeadersInit => {
   try {
     const authData = JSON.parse(localStorage.getItem('auth-storage') || '{}');
     const token = authData?.state?.accessToken;
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
+    return token ? { 'Authorization': `Bearer ${token}`, ...NGROK_SKIP_HEADER } : { ...NGROK_SKIP_HEADER };
   } catch {
-    return {};
+    return { ...NGROK_SKIP_HEADER };
   }
 };
 

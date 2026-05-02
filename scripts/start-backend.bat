@@ -45,23 +45,23 @@ if "%VERCEL_DEPLOY_HOOK_URL%"=="" (
     exit /b 1
 )
 
-echo [1/4] Starting Docker...
-cd /d "%ROOT_DIR%"
-docker-compose up -d
-if errorlevel 1 (
-    echo ERROR: Docker failed
-    pause
-    exit /b 1
-)
-echo      Docker running
-echo.
+@REM echo [1/4] Starting Docker...
+@REM cd /d "%ROOT_DIR%"
+@REM docker-compose up -d
+@REM if errorlevel 1 (
+@REM     echo ERROR: Docker failed
+@REM     pause
+@REM     exit /b 1
+@REM )
+@REM echo      Docker running
+@REM echo.
 
 echo [2/4] Killing old ngrok...
 taskkill /F /IM ngrok.exe >nul 2>&1
 timeout /t 2 >nul
 
 echo [3/4] Starting ngrok on port 8000...
-start "" /B ngrok tcp 8000 --authtoken=%NGROK_TOKEN% --log=stdout --log-format=json > "%TEMP%\ngrok.log" 2>&1
+start "" /B ngrok http 8000 --authtoken=%NGROK_TOKEN% --host-header=rewrite --log=stdout --log-format=json > "%TEMP%\ngrok.log" 2>&1
 
 echo      Waiting for tunnel...
 

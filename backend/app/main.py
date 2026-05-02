@@ -6,12 +6,10 @@ import os
 
 app = FastAPI(title="PodcastStats API", version="1.0.0")
 
-# Allow localhost for dev, configurable for production via CORS_ORIGINS env var
-cors_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:3001,http://localhost:8080").split(",")
-
+# Allow all origins - wildcard
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=["https://podcast-app-gules-eta.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,3 +27,7 @@ def root():
 @app.get("/health")
 def health():
     return {"status": "healthy"}
+
+@app.get("/debug-cors")
+def debug():
+    return {"message": "cors test"}

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': 'true' };
 
 interface User {
   id: string;
@@ -33,7 +34,7 @@ export const useAuthStore = create<AuthState>()(
       login: async (email: string, password: string) => {
         const res = await fetch(`${API_URL}/api/auth/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...NGROK_SKIP_HEADER },
           body: JSON.stringify({ email, password }),
         });
         
@@ -46,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
         set({ accessToken: data.access_token, refreshToken: data.refresh_token });
         
         const userRes = await fetch(`${API_URL}/api/auth/me`, {
-          headers: { 'Authorization': `Bearer ${data.access_token}` },
+          headers: { 'Authorization': `Bearer ${data.access_token}`, ...NGROK_SKIP_HEADER },
         });
         
         if (userRes.ok) {
@@ -58,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
       register: async (email: string, password: string) => {
         const res = await fetch(`${API_URL}/api/auth/register`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...NGROK_SKIP_HEADER },
           body: JSON.stringify({ email, password }),
         });
         
@@ -71,7 +72,7 @@ export const useAuthStore = create<AuthState>()(
         set({ accessToken: data.access_token, refreshToken: data.refresh_token });
         
         const userRes = await fetch(`${API_URL}/api/auth/me`, {
-          headers: { 'Authorization': `Bearer ${data.access_token}` },
+          headers: { 'Authorization': `Bearer ${data.access_token}`, ...NGROK_SKIP_HEADER },
         });
         
         if (userRes.ok) {
@@ -86,7 +87,7 @@ export const useAuthStore = create<AuthState>()(
           try {
             await fetch(`${API_URL}/api/auth/logout`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', ...NGROK_SKIP_HEADER },
               body: JSON.stringify({ refresh_token: refreshToken }),
             });
           } catch (e) {
@@ -109,7 +110,7 @@ export const useAuthStore = create<AuthState>()(
         
         const res = await fetch(`${API_URL}/api/auth/refresh`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...NGROK_SKIP_HEADER },
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
         
@@ -132,7 +133,7 @@ export const useAuthStore = create<AuthState>()(
         
         try {
           const res = await fetch(`${API_URL}/api/auth/me`, {
-            headers: { 'Authorization': `Bearer ${accessToken}` },
+            headers: { 'Authorization': `Bearer ${accessToken}`, ...NGROK_SKIP_HEADER },
           });
           
           if (res.ok) {

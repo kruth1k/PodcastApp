@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Howl } from 'howler';
 
+const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': 'true' };
+
 export interface Episode {
   id: string;
   podcast_id?: string;
@@ -65,7 +67,8 @@ const savePosition = (episodeId: string, position: number): void => {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${token}`,
+        ...NGROK_SKIP_HEADER
       },
       body: JSON.stringify({ episode_id: episodeId, position_seconds: Math.floor(position) })
     }).catch(console.error);
