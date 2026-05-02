@@ -13,6 +13,7 @@
 - [ ] **Phase 6: Time-Grouped Statistics** - Week/month/year grouped analytics
 - [ ] **Phase 7: Library Search** - Search episodes within library
 - [ ] **Phase 8: Login & Cross-Device Sync** - User accounts with cloud sync
+- [ ] **Phase 9: Loading Indicator, Episode Sorting & Dark Mode** - Loading state, sort options, and theme toggle
 
 ---
 
@@ -189,6 +190,28 @@
 **Plans:** 1 plan
 
 - [x] 08-01-PLAN.md — Login & Cross-Device Sync implementation (GSD format)
+
+**UI hint:** yes
+
+---
+
+## Phase 9: Loading Indicator, Episode Sorting & Dark Mode
+
+**Goal:** Add visual feedback for audio loading, sorting options for episodes, and theme toggle
+
+**Depends on:** Phase 8
+
+**Success Criteria** (what must be TRUE):
+1. User sees a loading indicator when clicking play on an episode before audio starts
+2. User can sort episodes by newest first (current default)
+3. User can sort episodes by oldest first (reverse chronological)
+4. Sort preference persists during session
+5. User can toggle between light and dark mode
+6. Theme preference persists across sessions
+
+**Plans:** 1 plan
+
+- [x] 09-01-PLAN.md — Loading indicator, episode sorting, and dark mode
 
 **UI hint:** yes
 
