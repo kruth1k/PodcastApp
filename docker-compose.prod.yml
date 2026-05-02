@@ -1,0 +1,23 @@
+version: '3.8'
+
+# Production compose override
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# Or copy and modify docker-compose.yml directly
+
+services:
+  backend:
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      # Optionally override if not using DATABASE_URL
+      # POSTGRES_HOST: your-db-host
+      # POSTGRES_PORT: 5432
+      # POSTGRES_USER: your-db-user
+      # POSTGRES_PASSWORD: your-db-password
+      # POSTGRES_DB: podcast_stats
+
+  # Remove this in production - use managed DB instead
+  postgres:
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
