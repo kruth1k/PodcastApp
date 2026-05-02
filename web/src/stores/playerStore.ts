@@ -100,6 +100,7 @@ interface PlayerState {
   lastProgressTime: number;
   progressInterval: NodeJS.Timeout | null;
   pauseTimestamp: number | null;
+  lastPlayTime: number; // Debounce protection
 
   playEpisode: (episode: Episode) => void;
   togglePlay: () => void;
@@ -128,12 +129,18 @@ function startProgressHeartbeat(state: PlayerState): void {
     clearInterval(state.progressInterval);
   }
   
+  let heartbeatCount = 0;
+  
   const interval = setInterval(() => {
     const current = usePlayerStore.getState();
-    if (current.isPlaying && current.howlInstance) {
+    if (current.isPlaying && current.howlInstance && current.currentEpisode) {
       const pos = current.howlInstance.seek();
       if (typeof pos === 'number') {
         current.captureEvent('progress', pos);
+        heartbeatCount++;
+        if (heartbeatCount % 3 === 0) {
+          savePosition(current.currentEpisode.id, pos);
+        }
       }
     }
   }, 10000);
@@ -167,6 +174,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   lastProgressTime: 0,
   progressInterval: null,
   pauseTimestamp: null,
+  lastPlayTime: 0,
 
   loadPosition: (episodeId: string) => getStoredPosition(episodeId),
 
@@ -309,6 +317,14 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
 
   playEpisode: (episode: Episode) => {
     const state = get();
+    const now = Date.now();
+    
+    // Debounce: ignore rapid clicks within 500ms
+    if (now - state.lastPlayTime < 500) {
+      return;
+    }
+    set({ lastPlayTime: now });
+    
     const { howlInstance, seekTimeout, currentEpisode, currentSessionId } = state;
     
     if (currentSessionId) {
@@ -322,7 +338,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     
     saveCurrentEpisode(episode);
     
-    if (howlInstance) howlInstance.unload();
+    if (howlInstance) {
+      howlInstance.stop(); // Stop first before unload to prevent audio bleeding
+      howlInstance.unload();
+    }
     if (seekTimeout) clearTimeout(seekTimeout);
 
     const savedPosition = getStoredPosition(episode.id);
