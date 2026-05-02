@@ -353,21 +353,35 @@ export const useStatsStore = create<StatsState>((set, get) => ({
     // Read fresh events from localStorage (playerStore writes directly)
     const events = loadEvents();
     const byDateAndPodcast = new Map<string, DailyStats>();
-    for (const event of events) {
-      // Only count progress events as actual listening time
-      if (event.event_type !== 'progress') continue;
-      const date = new Date(event.timestamp).toISOString().split('T')[0];
-      const key = `${date}_${event.podcast_id}`;
+    
+    // Sort events by timestamp for time calculation
+    const sortedEvents = [...events].sort((a, b) => a.timestamp - b.timestamp);
+    
+    // Calculate actual listening time from wall-clock time between consecutive progress events
+    for (let i = 1; i < sortedEvents.length; i++) {
+      const prev = sortedEvents[i - 1];
+      const curr = sortedEvents[i];
+      
+      // Only count if both are progress events
+      if (prev.event_type !== 'progress' || curr.event_type !== 'progress') continue;
+      if (prev.podcast_id !== curr.podcast_id) continue;
+      
+      const timeDiff = (curr.timestamp - prev.timestamp) / 1000; // ms to seconds
+      // Ignore gaps > 5 minutes (probably app was closed)
+      if (timeDiff <= 0 || timeDiff > 300) continue;
+      
+      const date = new Date(curr.timestamp).toISOString().split('T')[0];
+      const key = `${date}_${curr.podcast_id}`;
       const existing = byDateAndPodcast.get(key) || {
         date,
-        podcast_id: event.podcast_id,
+        podcast_id: curr.podcast_id,
         total_seconds: 0,
         session_count: 0,
       };
-      // Each progress event represents ~30 seconds of listening
-      existing.total_seconds += 30;
+      existing.total_seconds += timeDiff;
       byDateAndPodcast.set(key, existing);
     }
+    
     // Count unique sessions
     const sessionsByDateAndPodcast = new Map<string, Set<string>>();
     for (const event of events) {
@@ -579,21 +593,25 @@ export const useStatsStore = create<StatsState>((set, get) => ({
     const sortedEvents = [...events].sort((a, b) => a.timestamp - b.timestamp);
     
     for (let i = 1; i < sortedEvents.length; i++) {
-      const prevEvent = sortedEvents[i - 1];
-      const currEvent = sortedEvents[i];
+      const prev = sortedEvents[i - 1];
+      const curr = sortedEvents[i];
       
-      if (prevEvent.event_type !== 'pause' && currEvent.event_type !== 'play') {
-        const contentTime = currEvent.position_seconds - prevEvent.position_seconds;
-        const wallClockTime = (currEvent.timestamp - prevEvent.timestamp) / 1000;
-        
-        if (contentTime > 0 && wallClockTime > 0) {
-          const saved = contentTime - wallClockTime;
-          if (saved > 0) {
-            timeSaved += saved;
-          }
-        }
-      }
+      // Only calculate for consecutive progress events
+      if (prev.event_type !== 'progress' || curr.event_type !== 'progress') continue;
+      
+      const contentTime = curr.position_seconds - prev.position_seconds;
+      if (contentTime <= 0) continue;
+      
+      // Get the playback rate from the event
+      const playbackRate = curr.playback_rate || 1;
+      if (playbackRate <= 1) continue; // No time saved at 1x or below
+      
+      // Time saved = content time - (content time / playback rate)
+      // Example: 30s content at 1.5x = 20s wall clock, so 10s saved
+      const wallClockTime = contentTime / playbackRate;
+      timeSaved += (contentTime - wallClockTime);
     }
+    
     return Math.round(timeSaved);
   },
 }));
