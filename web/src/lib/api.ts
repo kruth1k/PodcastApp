@@ -90,8 +90,8 @@ getPodcasts: async (): Promise<Podcast[]> => {
     if (!res.ok) throw new Error('Failed to delete podcast');
   },
 
-  getEpisodes: async (podcastId: string, offset: number = 0, limit: number = 50): Promise<{ episodes: Episode[], total: number }> => {
-    const res = await fetch(`${API_URL}/api/episodes?podcast_id=${podcastId}&offset=${offset}&limit=${limit}`, {
+  getEpisodes: async (podcastId: string, offset: number = 0, limit: number = 50, sortBy: string = 'newest'): Promise<{ episodes: Episode[], total: number }> => {
+    const res = await fetch(`${API_URL}/api/episodes?podcast_id=${podcastId}&offset=${offset}&limit=${limit}&sort_by=${sortBy}`, {
       headers: { ...getAuthHeaders() }
     });
     if (await handleAuthError(res)) throw new Error('Session expired');
@@ -159,14 +159,7 @@ getPodcasts: async (): Promise<Podcast[]> => {
     if (!res.ok) throw new Error('Failed to delete podcast');
   },
 
-  getEpisodes: async (podcastId: string, offset: number = 0, limit: number = 50): Promise<{ episodes: Episode[], total: number }> => {
-    const res = await fetch(`${API_URL}/api/episodes?podcast_id=${podcastId}&offset=${offset}&limit=${limit}`, {
-      headers: { ...getAuthHeaders() }
-    });
-    if (!res.ok) throw new Error('Failed to fetch episodes');
-    const episodes = await res.json();
-    return { episodes, total: episodes.length }; // For now, total is episodes length; we'll get actual count separately
-  },
+  
 
   getEpisodesCount: async (podcastId: string): Promise<number> => {
     const res = await fetch(`${API_URL}/api/episodes/count?podcast_id=${podcastId}`, {

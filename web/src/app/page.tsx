@@ -221,7 +221,7 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-4">
           {user && (
-            <span className="text-sm text-gray-600">{user.email}</span>
+            <span className="text-sm text-gray-600 dark:text-gray-300">{user.email}</span>
           )}
           <Link
             href="/stats"

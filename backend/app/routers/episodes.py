@@ -10,6 +10,7 @@ def get_episodes(
     podcast_id: str = None,
     offset: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
+    sort_by: str = Query('newest', regex='^(newest|oldest)$'),
     db: Session = Depends(database.get_db)
 ):
     if not podcast_id:
@@ -19,7 +20,7 @@ def get_episodes(
     if not podcast:
         raise HTTPException(status_code=404, detail="Podcast not found")
     
-    episodes = crud.get_episodes(db, podcast_id, offset=offset, limit=limit)
+    episodes = crud.get_episodes(db, podcast_id, offset=offset, limit=limit, sort_by=sort_by)
     return episodes
 
 @router.get("/count")

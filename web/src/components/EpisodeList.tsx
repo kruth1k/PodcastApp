@@ -33,7 +33,7 @@ export default function EpisodeList({ podcastId }: EpisodeListProps) {
         const count = await api.getEpisodesCount(podcastId);
         setTotalEpisodes(count);
         const offset = (currentPage - 1) * EPISODES_PER_PAGE;
-        const { episodes: data } = await api.getEpisodes(podcastId, offset, EPISODES_PER_PAGE);
+        const { episodes: data } = await api.getEpisodes(podcastId, offset, EPISODES_PER_PAGE, sortOrder);
         setEpisodes(data);
       } catch (error) {
         console.error('Failed to fetch episodes:', error);
@@ -42,7 +42,7 @@ export default function EpisodeList({ podcastId }: EpisodeListProps) {
       }
     };
     fetchData();
-  }, [podcastId, currentPage]);
+  }, [podcastId, currentPage, sortOrder]);
 
   const handleSortChange = (order: 'newest' | 'oldest') => {
     setSortOrder(order);
