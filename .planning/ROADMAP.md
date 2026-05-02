@@ -17,6 +17,7 @@
 - [ ] **Phase 10: Resume Playback** - Show last played episode in player bar on login
 - [ ] **Phase 11: Fix Hydration Issue** - Fix server/client HTML mismatch errors
 - [ ] **Phase 12: Change Charts to Graphs** - Replace bar charts with line/area graphs
+- [ ] **Phase 13: Fix UI Issues** - Fix dark mode text visibility + episode sorting
 
 ---
 
@@ -273,6 +274,24 @@
 **Plans:** 1 plan
 
 - [ ] 12-01-PLAN.md — Change charts to graphs + time saved feature
+
+**UI hint:** yes
+
+---
+
+## Phase 13: Fix UI Issues
+
+**Goal:** Fix dark mode username visibility and episode sorting
+
+**Depends on:** Phase 12
+
+**Success Criteria** (what must be TRUE):
+1. Username/email visible in dark mode (proper text color)
+2. Oldest sort shows oldest episode of podcast across all pages (last page = newest)
+
+**Plans:** 1 plan
+
+- [ ] 13-01-PLAN.md — Fix UI issues
 
 **UI hint:** yes
 
