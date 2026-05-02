@@ -16,6 +16,7 @@
 - [ ] **Phase 9: Loading Indicator, Episode Sorting & Dark Mode** - Loading state, sort options, and theme toggle
 - [ ] **Phase 10: Resume Playback** - Show last played episode in player bar on login
 - [ ] **Phase 11: Fix Hydration Issue** - Fix server/client HTML mismatch errors
+- [ ] **Phase 12: Change Charts to Graphs** - Replace bar charts with line/area graphs
 
 ---
 
@@ -252,6 +253,25 @@
 **Plans:** 1 plan
 
 - [ ] 11-01-PLAN.md — Fix hydration issues
+
+**UI hint:** yes
+
+---
+
+## Phase 12: Change Charts to Graphs
+
+**Goal:** Replace bar chart visualization with line/area graphs
+
+**Depends on:** Phase 11
+
+**Success Criteria** (what must be TRUE):
+1. Statistics page shows data as line/area graphs instead of bar charts
+2. User can view listening trends over time (daily, weekly, monthly)
+3. Graphs are responsive and work on different screen sizes
+
+**Plans:** 1 plan
+
+- [ ] 12-01-PLAN.md — Change charts to graphs
 
 **UI hint:** yes
 
