@@ -20,6 +20,7 @@ export default function Home() {
   const [showResults, setShowResults] = useState(false);
   const [showLogin, setShowLogin] = useState(true);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   
   const { selectedPodcast, selectPodcast, addPodcast, fetchPodcasts, isLoading, error, searchEpisodes, searchPodcasts, podcasts } = usePodcastStore();
@@ -27,6 +28,7 @@ export default function Home() {
 
   useEffect(() => {
     checkAuth();
+    setMounted(true);
   }, []);
 
   useEffect(() => {
@@ -197,6 +199,10 @@ export default function Home() {
     await logout();
     window.location.reload();
   };
+
+  if (!mounted) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     return showLogin ? (
