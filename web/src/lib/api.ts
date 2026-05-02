@@ -125,6 +125,9 @@ export const api = {
     if (res.status === 404 || res.status === 204 || res.status === 200 && res.headers.get('content-length') === '0') {
       return null;
     }
+    if (res.status === 401 || res.status === 403) {
+      return null;
+    }
     if (!res.ok) throw new Error('Failed to fetch last played');
     return res.json();
   },
