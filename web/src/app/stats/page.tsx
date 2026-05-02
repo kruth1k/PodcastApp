@@ -8,6 +8,7 @@ import StatsChart from '@/components/StatsChart';
 import StatsCalendar from '@/components/StatsCalendar';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const NGROK_SKIP_HEADER = { 'ngrok-skip-browser-warning': 'true' };
 
 function formatTime(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
@@ -57,7 +58,9 @@ export default function StatsPage() {
       
       for (const podcast of podcastList) {
         try {
-          const res = await fetch(`${API_URL}/api/podcasts/${podcast.id}`);
+          const res = await fetch(`${API_URL}/api/podcasts/${podcast.id}`, {
+            headers: NGROK_SKIP_HEADER
+          });
           if (res.status === 401 || res.status === 403) {
             const { logout } = useAuthStore.getState();
             logout();
