@@ -354,6 +354,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
         const { currentEpisode } = get();
         if (currentEpisode) {
           localStorage.setItem(`podcast_played_${currentEpisode.id}`, 'true');
+          savePosition(currentEpisode.id, 0); // Reset position to 0 on completion
           saveCurrentEpisode(null); // Clear saved episode on completion
         }
         get().captureEvent('complete', get().position);
