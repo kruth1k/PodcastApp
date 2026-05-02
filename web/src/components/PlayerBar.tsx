@@ -22,7 +22,7 @@ function formatTime(seconds: number): string {
 
 export function PlayerBar() {
   const [mounted, setMounted] = useState(false);
-  const { currentEpisode, isPlaying, position, duration, togglePlay, seek } = usePlayerStore();
+  const { currentEpisode, isPlaying, isBuffering, position, duration, togglePlay, seek } = usePlayerStore();
   const podcasts = usePodcastStore((state) => state.podcasts);
 
   const currentPodcast = currentEpisode?.podcast_id 
@@ -68,10 +68,16 @@ export function PlayerBar() {
           
           <button
             onClick={togglePlay}
-            className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors"
+            disabled={isBuffering}
+            className="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label={isPlaying ? 'Pause' : 'Play'}
           >
-            {isPlaying ? (
+            {isBuffering ? (
+              <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            ) : isPlaying ? (
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                 <rect x="6" y="4" width="4" height="16" />
                 <rect x="14" y="4" width="4" height="16" />

@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 interface User {
   id: string;
   email: string;
@@ -19,8 +21,6 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   setTokens: (accessToken: string, refreshToken: string) => void;
 }
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export const useAuthStore = create<AuthState>()(
   persist(
@@ -94,6 +94,11 @@ export const useAuthStore = create<AuthState>()(
           }
         }
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
+        
+        // Clear player state in localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('podcast_current_episode');
+        }
       },
 
       refreshAccessToken: async () => {

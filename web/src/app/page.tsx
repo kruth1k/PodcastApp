@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePodcastStore } from '@/stores/podcastStore';
 import { useAuthStore } from '@/stores/authStore';
+import { usePlayerStore } from '@/stores/playerStore';
 import { api } from '@/lib/api';
 import PodcastList from '@/components/PodcastList';
 import EpisodeList from '@/components/EpisodeList';
@@ -18,6 +19,7 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [showLogin, setShowLogin] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   
   const { selectedPodcast, selectPodcast, addPodcast, fetchPodcasts, isLoading, error, searchEpisodes, searchPodcasts, podcasts } = usePodcastStore();
@@ -28,9 +30,60 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+    setIsDarkMode(isDark);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newIsDark = !isDarkMode;
+    setIsDarkMode(newIsDark);
+    if (newIsDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  };
+
+  useEffect(() => {
     if (isAuthenticated) {
       fetchPodcasts();
     }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    const loadLastPlayed = async () => {
+      if (isAuthenticated) {
+        try {
+          const lastPlayed = await api.getLastPlayed();
+          if (lastPlayed) {
+            const { setLastPlayed } = usePlayerStore.getState();
+            setLastPlayed(
+              {
+                id: lastPlayed.episode.id,
+                title: lastPlayed.episode.title,
+                audio_url: lastPlayed.episode.audio_url,
+                podcast_id: lastPlayed.episode.podcast_id,
+                description: '',
+                duration: null,
+                published_at: '',
+                guid: ''
+              },
+              lastPlayed.position_seconds
+            );
+          }
+        } catch (err) {
+          console.error('Failed to load last played:', err);
+        }
+      }
+    };
+    loadLastPlayed();
   }, [isAuthenticated]);
 
   useEffect(() => {
@@ -151,8 +204,8 @@ export default function Home() {
     <div className="max-w-6xl mx-auto px-4 py-8">
       <header className="mb-8 flex justify-between items-start">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">PodcastStats</h1>
-          <p className="text-gray-500 mt-1">Track your podcast listening statistics</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">PodcastStats</h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">Track your podcast listening statistics</p>
         </div>
         <div className="flex items-center gap-4">
           {user && (
@@ -192,6 +245,21 @@ export default function Home() {
         >
           Logout
         </button>
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600"
+          title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {isDarkMode ? (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
+            </svg>
+          ) : (
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
+            </svg>
+          )}
+        </button>
         </div>
       </header>
 
@@ -203,7 +271,7 @@ export default function Home() {
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Search podcasts and episodes..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
           />
           <SearchResults
             results={searchResults}
@@ -220,7 +288,7 @@ export default function Home() {
             value={feedUrl}
             onChange={(e) => setFeedUrl(e.target.value)}
             placeholder="Enter podcast RSS feed URL..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white dark:placeholder-gray-400"
             required
           />
           <button
@@ -236,7 +304,7 @@ export default function Home() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
-          <h2 className="text-xl font-semibold mb-4">Your Podcasts</h2>
+          <h2 className="text-xl font-semibold mb-4 dark:text-white">Your Podcasts</h2>
           <PodcastList />
         </div>
 
@@ -252,7 +320,7 @@ export default function Home() {
                 </button>
                 <h2 className="text-xl font-semibold">{selectedPodcast.title}</h2>
               </div>
-              <EpisodeList />
+              {selectedPodcast && <EpisodeList podcastId={selectedPodcast.id} />}
             </>
           ) : (
             <div className="text-center py-12 text-gray-400">

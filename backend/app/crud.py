@@ -43,10 +43,15 @@ def delete_podcast(db: Session, podcast_id: str) -> bool:
         return True
     return False
 
-def get_episodes(db: Session, podcast_id: str) -> List[models.Episode]:
+def get_episodes(db: Session, podcast_id: str, offset: int = 0, limit: int = 50) -> List[models.Episode]:
     return db.query(models.Episode).filter(
         models.Episode.podcast_id == podcast_id
-    ).order_by(models.Episode.published_at.desc()).all()
+    ).order_by(models.Episode.published_at.desc()).offset(offset).limit(limit).all()
+
+def get_episodes_count(db: Session, podcast_id: str) -> int:
+    return db.query(models.Episode).filter(
+        models.Episode.podcast_id == podcast_id
+    ).count()
 
 def create_episode(db: Session, podcast_id: str, episode_data: dict) -> models.Episode:
     episode = models.Episode(

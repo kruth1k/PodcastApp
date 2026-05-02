@@ -58,6 +58,17 @@ class PlaybackPositionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class LastPlayedEpisode(BaseModel):
+    id: str
+    title: str
+    audio_url: str
+    podcast_id: str
+
+class LastPlayedResponse(BaseModel):
+    episode_id: str
+    position_seconds: int
+    episode: LastPlayedEpisode
+
 class PodcastCreate(BaseModel):
     feed_url: str
 

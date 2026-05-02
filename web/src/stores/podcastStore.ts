@@ -13,6 +13,9 @@ interface PodcastStore {
   podcasts: Podcast[];
   selectedPodcast: Podcast | null;
   episodes: Episode[];
+  episodesTotal: number;
+  episodesOffset: number;
+  isLoadingEpisodes: boolean;
   isLoading: boolean;
   error: string | null;
   fetchPodcasts: () => Promise<void>;
@@ -20,6 +23,7 @@ interface PodcastStore {
   removePodcast: (id: string) => Promise<void>;
   selectPodcast: (podcast: Podcast | null) => void;
   fetchEpisodes: (podcastId: string) => Promise<void>;
+  loadMoreEpisodes: (podcastId: string) => Promise<void>;
   searchPodcasts: (query: string) => Podcast[];
   searchEpisodes: (query: string) => SearchResult[];
 }
@@ -28,6 +32,9 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   podcasts: [],
   selectedPodcast: null,
   episodes: [],
+  episodesTotal: 0,
+  episodesOffset: 0,
+  isLoadingEpisodes: false,
   isLoading: false,
   error: null,
 
@@ -63,7 +70,7 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
   },
 
   selectPodcast: (podcast: Podcast | null) => {
-    set({ selectedPodcast: podcast, episodes: [] });
+    set({ selectedPodcast: podcast, episodes: [], episodesTotal: 0, episodesOffset: 0 });
     if (podcast) {
       get().fetchEpisodes(podcast.id);
     }
@@ -71,10 +78,29 @@ export const usePodcastStore = create<PodcastStore>((set, get) => ({
 
   fetchEpisodes: async (podcastId: string) => {
     try {
-      const episodes = await api.getEpisodes(podcastId);
-      set({ episodes });
+      set({ isLoadingEpisodes: true });
+      const total = await api.getEpisodesCount(podcastId);
+      const { episodes } = await api.getEpisodes(podcastId, 0, 50);
+      set({ episodes, episodesTotal: total, episodesOffset: 50, isLoadingEpisodes: false });
     } catch (error) {
-      set({ error: (error as Error).message });
+      set({ error: (error as Error).message, isLoadingEpisodes: false });
+    }
+  },
+
+  loadMoreEpisodes: async (podcastId: string) => {
+    const { episodes, episodesOffset, episodesTotal } = get();
+    if (episodes.length >= episodesTotal || get().isLoadingEpisodes) return;
+    
+    try {
+      set({ isLoadingEpisodes: true });
+      const { episodes: moreEpisodes } = await api.getEpisodes(podcastId, episodesOffset, 50);
+      set({ 
+        episodes: [...episodes, ...moreEpisodes], 
+        episodesOffset: episodesOffset + 50,
+        isLoadingEpisodes: false 
+      });
+    } catch (error) {
+      set({ error: (error as Error).message, isLoadingEpisodes: false });
     }
   },
 

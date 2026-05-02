@@ -73,12 +73,22 @@ export const api = {
     if (!res.ok) throw new Error('Failed to delete podcast');
   },
 
-  getEpisodes: async (podcastId: string): Promise<Episode[]> => {
-    const res = await fetch(`${API_URL}/api/episodes?podcast_id=${podcastId}`, {
+  getEpisodes: async (podcastId: string, offset: number = 0, limit: number = 50): Promise<{ episodes: Episode[], total: number }> => {
+    const res = await fetch(`${API_URL}/api/episodes?podcast_id=${podcastId}&offset=${offset}&limit=${limit}`, {
       headers: { ...getAuthHeaders() }
     });
     if (!res.ok) throw new Error('Failed to fetch episodes');
-    return res.json();
+    const episodes = await res.json();
+    return { episodes, total: episodes.length }; // For now, total is episodes length; we'll get actual count separately
+  },
+
+  getEpisodesCount: async (podcastId: string): Promise<number> => {
+    const res = await fetch(`${API_URL}/api/episodes/count?podcast_id=${podcastId}`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (!res.ok) throw new Error('Failed to fetch episodes count');
+    const data = await res.json();
+    return data.count;
   },
 
   refreshPodcast: async (podcastId: string): Promise<Podcast> => {
@@ -97,5 +107,37 @@ export const api = {
     });
     if (!res.ok) throw new Error('Failed to refresh all podcasts');
     return res.json();
+  },
+
+  getLastPlayed: async (): Promise<{
+    episode_id: string;
+    position_seconds: number;
+    episode: {
+      id: string;
+      title: string;
+      audio_url: string;
+      podcast_id: string;
+    };
+  } | null> => {
+    const res = await fetch(`${API_URL}/api/stats/last-played`, {
+      headers: { ...getAuthHeaders() }
+    });
+    if (res.status === 404 || res.status === 204 || res.status === 200 && res.headers.get('content-length') === '0') {
+      return null;
+    }
+    if (!res.ok) throw new Error('Failed to fetch last played');
+    return res.json();
+  },
+
+  savePlaybackPosition: async (episodeId: string, positionSeconds: number): Promise<void> => {
+    const res = await fetch(`${API_URL}/api/stats/position/${episodeId}`, {
+      method: 'PUT',
+      headers: { 
+        'Content-Type': 'application/json',
+        ...getAuthHeaders()
+      },
+      body: JSON.stringify({ episode_id: episodeId, position_seconds: positionSeconds })
+    });
+    if (!res.ok) throw new Error('Failed to save position');
   },
 };

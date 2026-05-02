@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 import uuid
 from datetime import datetime
 from app import database, schemas, models
@@ -123,6 +123,38 @@ def get_playback_position(
         )
     
     return position
+
+@router.get("/last-played", response_model=Optional[schemas.LastPlayedResponse])
+def get_last_played(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    user_id = get_current_user_id(request)
+    
+    position = db.query(models.PlaybackPosition).filter(
+        models.PlaybackPosition.user_id == user_id
+    ).order_by(models.PlaybackPosition.updated_at.desc()).first()
+    
+    if not position:
+        return None
+    
+    episode = db.query(models.Episode).filter(
+        models.Episode.id == position.episode_id
+    ).first()
+    
+    if not episode:
+        return None
+    
+    return {
+        "episode_id": position.episode_id,
+        "position_seconds": position.position_seconds,
+        "episode": {
+            "id": episode.id,
+            "title": episode.title,
+            "audio_url": episode.audio_url,
+            "podcast_id": episode.podcast_id
+        }
+    }
 
 @router.get("/sync", response_model=dict)
 def get_all_data(

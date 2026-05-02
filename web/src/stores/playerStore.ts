@@ -26,12 +26,50 @@ const getStoredPosition = (episodeId: string): number | null => {
   return null;
 };
 
+const CURRENT_EPISODE_KEY = 'podcast_current_episode';
+
+const getStoredCurrentEpisode = (): Episode | null => {
+  if (typeof window === 'undefined') return null;
+  const stored = localStorage.getItem(CURRENT_EPISODE_KEY);
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const saveCurrentEpisode = (episode: Episode | null): void => {
+  if (typeof window === 'undefined') return;
+  if (episode) {
+    localStorage.setItem(CURRENT_EPISODE_KEY, JSON.stringify(episode));
+  } else {
+    localStorage.removeItem(CURRENT_EPISODE_KEY);
+  }
+};
+
 const savePosition = (episodeId: string, position: number): void => {
   if (typeof window === 'undefined') return;
   localStorage.setItem(`podcast_position_${episodeId}`, JSON.stringify({
     position,
     updatedAt: Date.now()
   }));
+  
+  // Also save to backend for cross-device sync
+  const authData = JSON.parse(localStorage.getItem('auth-storage') || '{}');
+  const token = authData?.state?.accessToken;
+  if (token) {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/stats/position/${episodeId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ episode_id: episodeId, position_seconds: Math.floor(position) })
+    }).catch(console.error);
+  }
 };
 
 /** Generate a UUID v4 */
@@ -46,6 +84,7 @@ function generateUUID(): string {
 interface PlayerState {
   currentEpisode: Episode | null;
   isPlaying: boolean;
+  isBuffering: boolean;
   position: number;
   duration: number;
   playbackRate: number;
@@ -67,10 +106,12 @@ interface PlayerState {
   skipBackward: () => void;
   updatePosition: () => void;
   loadPosition: (episodeId: string) => number | null;
+  setLastPlayed: (episode: Episode, position: number) => void;
   isPlayed: (episodeId: string) => boolean;
   togglePlayed: (episodeId: string) => void;
   markEpisodePlayed: (episodeId: string) => void;
   endSession: () => void;
+  clearPlayer: () => void;
 
   // Event capture (D-36, D-40)
   captureEvent: (event_type: 'play' | 'pause' | 'seek_forward' | 'seek_back' | 'complete' | 'progress', position: number, previous_position?: number) => void;
@@ -78,7 +119,7 @@ interface PlayerState {
   stopProgressHeartbeat: () => void;
 }
 
-/** Start the 30-second progress heartbeat (D-38) */
+/** Start the 10-second progress heartbeat */
 function startProgressHeartbeat(state: PlayerState): void {
   if (state.progressInterval) {
     clearInterval(state.progressInterval);
@@ -92,7 +133,7 @@ function startProgressHeartbeat(state: PlayerState): void {
         current.captureEvent('progress', pos);
       }
     }
-  }, 30000);
+  }, 10000);
 
   state.progressInterval = interval;
 }
@@ -106,9 +147,13 @@ function stopProgressHeartbeat(state: PlayerState): void {
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
-  currentEpisode: null,
+  currentEpisode: typeof window !== 'undefined' ? getStoredCurrentEpisode() : null,
+  position: (() => {
+    const ep = typeof window !== 'undefined' ? getStoredCurrentEpisode() : null;
+    return ep ? getStoredPosition(ep.id) || 0 : 0;
+  })(),
   isPlaying: false,
-  position: 0,
+  isBuffering: false,
   duration: 0,
   playbackRate: 1,
   volume: 1,
@@ -121,6 +166,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   pauseTimestamp: null,
 
   loadPosition: (episodeId: string) => getStoredPosition(episodeId),
+
+  setLastPlayed: (episode: Episode, position: number) => {
+    set({
+      currentEpisode: episode,
+      position: position,
+      isPlaying: false,
+      isBuffering: false,
+      duration: 0,
+      howlInstance: null,
+    });
+  },
 
   isPlayed: (episodeId: string): boolean => {
     const { playedEpisodes } = get();
@@ -202,6 +258,29 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   startProgressHeartbeat: () => startProgressHeartbeat(get()),
   stopProgressHeartbeat: () => stopProgressHeartbeat(get()),
   endSession: () => set({ currentSessionId: null, pauseTimestamp: null }),
+  
+  clearPlayer: () => {
+    const { howlInstance, seekTimeout, progressInterval } = get();
+    if (howlInstance) howlInstance.unload();
+    if (seekTimeout) clearTimeout(seekTimeout);
+    if (progressInterval) clearInterval(progressInterval);
+    
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('podcast_current_episode');
+    }
+    
+    set({
+      currentEpisode: null,
+      isPlaying: false,
+      isBuffering: false,
+      position: 0,
+      duration: 0,
+      howlInstance: null,
+      seekTimeout: null,
+      progressInterval: null,
+      currentSessionId: null,
+    });
+  },
 
   playEpisode: (episode: Episode) => {
     const state = get();
@@ -216,11 +295,15 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       savePosition(currentEpisode.id, state.position);
     }
     
+    saveCurrentEpisode(episode);
+    
     if (howlInstance) howlInstance.unload();
     if (seekTimeout) clearTimeout(seekTimeout);
 
     const savedPosition = getStoredPosition(episode.id);
     const newSessionId = generateUUID();
+
+    set({ isBuffering: true });
 
     const howl = new Howl({
       src: [episode.audio_url],
@@ -229,11 +312,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       rate: state.playbackRate,
       volume: state.volume,
       onload: () => {
-        set({ duration: howl.duration() });
+        set({ duration: howl.duration(), isBuffering: false });
         if (savedPosition !== null && savedPosition > 0) howl.seek(savedPosition);
       },
       onplay: () => {
-        set({ isPlaying: true });
+        set({ isPlaying: true, isBuffering: false });
         get().updatePosition();
       },
       onpause: () => {
@@ -244,11 +327,17 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       },
       onend: () => {
         const { currentEpisode } = get();
-        if (currentEpisode) localStorage.setItem(`podcast_played_${currentEpisode.id}`, 'true');
+        if (currentEpisode) {
+          localStorage.setItem(`podcast_played_${currentEpisode.id}`, 'true');
+          saveCurrentEpisode(null); // Clear saved episode on completion
+        }
         get().captureEvent('complete', get().position);
-        set({ isPlaying: false, position: 0 });
+        set({ isPlaying: false, position: 0, isBuffering: false });
         state.stopProgressHeartbeat();
         state.endSession();
+      },
+      onloaderror: () => {
+        set({ isBuffering: false });
       },
     });
 
@@ -271,6 +360,13 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   togglePlay: () => {
     const state = get();
     const { howlInstance, isPlaying, currentEpisode, position, currentSessionId, pauseTimestamp } = state;
+    
+    // If no audio instance but episode exists, start playing
+    if (!howlInstance && currentEpisode) {
+      get().playEpisode(currentEpisode);
+      return;
+    }
+    
     if (!howlInstance) return;
 
     if (isPlaying) {
