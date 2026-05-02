@@ -162,7 +162,7 @@ export default function StatsChart({ weeklyData, monthlyData, yearlyData, dailyD
               tickFormatter={(value) => `${value}m`}
             />
             <Tooltip 
-              formatter={(value: number) => [formatTime(value), 'Time']}
+              formatter={(value) => [formatTime(Number(value) || 0), 'Time']}
               contentStyle={{ borderRadius: '8px', border: '1px solid #e5e7eb' }}
             />
             <Line 
