@@ -260,7 +260,7 @@
 
 ## Phase 12: Change Charts to Graphs
 
-**Goal:** Replace bar chart visualization with line/area graphs
+**Goal:** Replace bar chart visualization with line/area graphs + add time saved feature
 
 **Depends on:** Phase 11
 
@@ -268,10 +268,11 @@
 1. Statistics page shows data as line/area graphs instead of bar charts
 2. User can view listening trends over time (daily, weekly, monthly)
 3. Graphs are responsive and work on different screen sizes
+4. Show "time saved" metric - calculated from playback speed (e.g., 2x speed = 50% time saved)
 
 **Plans:** 1 plan
 
-- [ ] 12-01-PLAN.md — Change charts to graphs
+- [ ] 12-01-PLAN.md — Change charts to graphs + time saved feature
 
 **UI hint:** yes
 
